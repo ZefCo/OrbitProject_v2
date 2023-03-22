@@ -12,6 +12,7 @@ void NBodies::orbits() {
 
     for (auto& [body_name, body]: psystem) {
         body.Gmass(G);
+        body.set_vec_size(tsteps);
         // std::array<double, 2> xy;
         // xy = body.get_xy();
         // std::cout << body_name << " " << xy[X] << " " << xy[Y] << std::endl;
@@ -22,7 +23,7 @@ void NBodies::orbits() {
         NBodies::time_step(t);
 
         for (auto& [body_name, body]: psystem) {
-            body.nth();
+            body.nth(t +1);
             // std::cout << body_name << std::endl;
             // for (int n = 0; n < body.xn.size(); n++) {
             //     std::cout << "\t" << body.xn[n] << ", " << body.yn[n] << "  " << body.vxn[n] << ", " << body.vyn[n] << std::endl;
