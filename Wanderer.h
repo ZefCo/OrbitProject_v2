@@ -21,9 +21,11 @@ class Wanderer {
         std::array<double, 2> get_xy();
         std::array<double, 2> get_vxy();
         std::string get_name();
+        // sets the size based off an input size and pushes in the inital values to the first position.
+        void set_vec_size(int tsteps);
 
-        //
-        void nth();
+        // Inserts something into the nth position
+        void nth(int n);
 
         // returns the nth position (index 0 and 1), and veloctiy (index 2 and 3)
         std::array<double, 4> get_nth(int n);
