@@ -70,10 +70,10 @@ void NBodies::time_step(int t) {
         xyv = body.get_nth(t);
         xn = xyv[X], yn = xyv[Y], vxn = xyv[2], vyn = xyv[3];
 
-        std::cout << "VXn = " << vxn << std::endl;
-        std::cout << "VYn = " << vyn << std::endl;
-        std::cout << "Xn = " << xn << std::endl;
-        std::cout << "Yn = " << yn << std::endl;
+        // std::cout << "VXn = " << vxn << std::endl;
+        // std::cout << "VYn = " << vyn << std::endl;
+        // std::cout << "Xn = " << xn << std::endl;
+        // std::cout << "Yn = " << yn << std::endl;
         // std::array<double, 2> xy, vxy;
         // xy = body.get_xy(), vxy = body.get_vxy();
         // xy = body.get_xy(), vxy = body.get_vxy();
@@ -165,18 +165,18 @@ void NBodies::time_step(int t) {
          xnn =  xn + (h/6)*( zeta_table[X][0] + (2 * zeta_table[X][1]) + (2 * zeta_table[X][2]) + zeta_table[X][3]);
          ynn =  yn + (h/6)*( zeta_table[Y][0] + (2 * zeta_table[Y][1]) + (2 * zeta_table[Y][2]) + zeta_table[Y][3]);
 
-        std::cout << "eta Table" << std::endl;
-        std::cout << eta_table[X][0] << "\t" << eta_table[X][1] << "\t" << eta_table[X][2] << "\t" << eta_table[X][3] << std::endl;
-        std::cout << eta_table[Y][0] << "\t" << eta_table[Y][1] << "\t" << eta_table[Y][2] << "\t" << eta_table[Y][3] << std::endl;
+        // std::cout << "eta Table" << std::endl;
+        // std::cout << eta_table[X][0] << "\t" << eta_table[X][1] << "\t" << eta_table[X][2] << "\t" << eta_table[X][3] << std::endl;
+        // std::cout << eta_table[Y][0] << "\t" << eta_table[Y][1] << "\t" << eta_table[Y][2] << "\t" << eta_table[Y][3] << std::endl;
 
-        std::cout << "zeta Table" << std::endl;
-        std::cout << zeta_table[X][0] << "\t" << zeta_table[X][1] << "\t" << zeta_table[X][2] << "\t" << zeta_table[X][3] << std::endl;
-        std::cout << zeta_table[Y][0] << "\t" << zeta_table[Y][1] << "\t" << zeta_table[Y][2] << "\t" << zeta_table[Y][3] << std::endl;
+        // std::cout << "zeta Table" << std::endl;
+        // std::cout << zeta_table[X][0] << "\t" << zeta_table[X][1] << "\t" << zeta_table[X][2] << "\t" << zeta_table[X][3] << std::endl;
+        // std::cout << zeta_table[Y][0] << "\t" << zeta_table[Y][1] << "\t" << zeta_table[Y][2] << "\t" << zeta_table[Y][3] << std::endl;
 
-        std::cout << "VXnn = " << vxnn << std::endl;
-        std::cout << "VYnn = " << vynn << std::endl;
-        std::cout << "Xnn = " << xnn << std::endl;
-        std::cout << "Ynn = " << ynn << std::endl;
+        // std::cout << "VXnn = " << vxnn << std::endl;
+        // std::cout << "VYnn = " << vynn << std::endl;
+        // std::cout << "Xnn = " << xnn << std::endl;
+        // std::cout << "Ynn = " << ynn << std::endl;
 
 
         // std::cout << "Xnn = " << xnn << " Ynn = " << ynn << " Vxnn = " << vxnn << " Vynn = " << vynn << std::endl; 

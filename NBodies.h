@@ -7,8 +7,8 @@
 
 namespace fs = std::filesystem;
 
-const double G = 6.67408E-11;  // changing G from [m**3 / (kg s**2)] to [AU**3 / (e d**2)] where e = mass of the earth and d = day
-// const double G = 880E-12;  // changing G from [m**3 / (kg s**2)] to [AU**3 / (e d**2)] where e = mass of the earth and d = day
+// const double G = 6.67408E-11;  // changing G from [m**3 / (kg s**2)] to [AU**3 / (e d**2)] where e = mass of the earth and d = day
+const double G = 880E-12;  // changing G from [m**3 / (kg s**2)] to [AU**3 / (e d**2)] where e = mass of the earth and d = day
 // const double G = 1;  // changing G from [m**3 / (kg s**2)] to [AU**3 / (e d**2)] where e = mass of the earth and d = day
 const int X = 0, Y = 1;
 
