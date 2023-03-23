@@ -11,14 +11,14 @@ int main() {
     double h;
     int time_steps;
 
-    std::cout << "Input the number of time steps (int): ";
+    std::cout << "Input the number of time steps - days (int): ";
     // std::cout << "Value set to 2" << std::endl;
     std::cin >> time_steps;
     // time_steps = 5;
-    std::cout << "Input a value for h (double): ";
-    // std::cout << "Value set to 0.1" << std::endl << std::endl;
-    std::cin >> h;
-    // h = 0.1;
+    // std::cout << "Input a value for h (double): ";
+    std::cout << "Step size set to 60*60*24 seconds (seconds in a day)" << std::endl << std::endl;
+    // std::cin >> h;
+    h = 60 * 60 * 24;
 
     auto ts = std::chrono::high_resolution_clock::now();
     std::map<std::string, Wanderer> system;
