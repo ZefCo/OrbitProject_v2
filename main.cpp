@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 // #include <math.h>
 #include "Wanderer.h"
 #include "OrbitProject.h"
@@ -19,7 +20,7 @@ int main() {
     std::cin >> h;
     // h = 0.1;
 
-
+    auto ts = std::chrono::high_resolution_clock::now();
     std::map<std::string, Wanderer> system;
 
     fs::path ao_filename = fs::current_path() / "AstronomicalObjects.json";
@@ -33,11 +34,14 @@ int main() {
 
     system = motion.get_system();
 
+    auto te = std::chrono::high_resolution_clock::now();
+
     // motion.write_csv(ao_outfile);
 
     write_csv(ao_outfile, system, time_steps);
 
     // double sanity = pow(2, 2);
-    std::cout << "Finished" << std::endl;
+    auto td = std::chrono::duration_cast<std::chrono::milliseconds>(te - ts).count();
+    std::cout << "\nFinished Code in: " << td << " miliseconds\n*not including wrting to csv" << std::endl;
 
 }

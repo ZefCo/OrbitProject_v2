@@ -43,7 +43,7 @@ class Wanderer {
 
 
     private:
-        double mass;
+        const double mass;
         double gass;
         std::string name;
 
