@@ -26,9 +26,11 @@ rows, cols = orbit_data.shape
 for c in range(int(cols / 2)):
     cndex = (2*c, 2*c+1)
     # print(cndex)
-    col_of_interest = orbit_data.iloc[:, cndex[0]:cndex[1] + 1].copy()
-    # print(col_of_interest)
-    sys.add_trace(go.Scatter(x = col_of_interest.iloc[:, 0], y = col_of_interest.iloc[:, 1]))
+    col_of_interest: pandas.DataFrame = orbit_data.iloc[:, cndex[0]:cndex[1] + 1].copy()
+    # print(tuple(col_of_interest.columns)[0])
+    name = re.split("_", tuple(col_of_interest.columns)[0])[0]
+    # exit()
+    sys.add_trace(go.Scatter(x = col_of_interest.iloc[:, 0], y = col_of_interest.iloc[:, 1], name = name))
     # break
 # print(orbit_data.shape)
 # print(orbit_tran)

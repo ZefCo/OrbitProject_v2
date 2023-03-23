@@ -59,7 +59,7 @@ void Wanderer::storage(double x, double y, double vx, double vy){
 void Wanderer::Gmass(double G) {gass = G * mass;}
 
 void Wanderer::set_vec_size(int tsteps) {
-    xn.resize(tsteps + 1), yn.resize(tsteps + 1), vxn.resize(tsteps + 1), vyn.resize(tsteps + 1);
+    xn.resize(tsteps + 1, 0), yn.resize(tsteps + 1, 0), vxn.resize(tsteps + 1, 0), vyn.resize(tsteps + 1, 0);
     // std::cout << "x = " << x << " y = " << y << " vx = " << vx << " vy = " << vy << std::endl;
     xn[0] = x, yn[0] = y, vxn[0] = vx, vyn[0] = vy;
 
