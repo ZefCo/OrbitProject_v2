@@ -1,8 +1,8 @@
 #include "NBodies_ats.h"
 
 
-NBodies::NBodies(std::map<std::string, Wanderer> psystem, int tsteps, double h):
-    psystem(psystem), tsteps(tsteps), h(h) {}
+NBodies::NBodies(std::map<std::string, Wanderer> psystem, int tsteps, double h, double delta, double G):
+    psystem(psystem), tsteps(tsteps), tsize0(h), delta(delta), G(G) {tsize = tsize0; bodies = psystem.size();}
 
 
 NBodies::~NBodies() {}
@@ -15,217 +15,84 @@ void NBodies::orbits() {
     for (auto& [body_name, body]: psystem) {
         body.Gmass(G);
         body.set_vec_size(tsteps);
-        // std::array<double, 2> xy;
-        // xy = body.get_xy();
-        // std::cout << body_name << " " << xy[X] << " " << xy[Y] << std::endl;
+        body.set_time(tsize0);
     }
 
-    for (int t = 0; t < NBodies::tsteps; t++) {
-        // int bodies = NBodies::psystem.size();
-        time_step(t);
+    for (int t = 0; t < tsteps; t++) {
+        // bool insufficent_accuracy = true;
+
+        // while (insufficent_accuracy){insufficent_accuracy = adative_step(t);}
+
+        adaptive_time_step(t);
 
         for (auto& [body_name, body]: psystem) {
-            body.nth(t + 1);  // note to self: the reason for storing the body xnn etc and then pushing later: I want the system to move all at once
+          body.nth(t + 1);  // note to self: the reason for storing the body xnn etc and then pushing later: I want the system to move all at once
             // and not be influenced by where things are seperetly.
-
-            // std::cout << body_name << std::endl;
-            // std::cout << body.xn[t] << ", " << body.yn[t] << "\t" << body.vxn[t] << ", " << body.vyn[t] << std::endl; 
-            // std::cout << body.xn[t + 1] << ", " << body.yn[t + 1] << "\t" << body.vxn[t + 1] << ", " << body.vyn[t + 1] << std::endl; 
-
-            // for (int n = 0; n < body.xn.size(); n++) {
-            //     std::cout << "\t" << body.xn[n] << ", " << body.yn[n] << "  " << body.vxn[n] << ", " << body.vyn[n] << std::endl;
-            // }
-            // std::array<double, 4> xyv = body.get_nth(t + 1);
-            // std::cout << body_name << " x = " << xyv[X] << " y = " << xyv[Y] << " vx = " << xyv[2] << " vy = " << xyv[3] << std::endl << std::endl;
         }
 
         if ((t % 10000) == 0) {std::cout << "Finished step " << t << std::endl;}
-    }
 
-    // // for (int t = 0; t < NBodies::tsteps; t++) {
-    //     for (auto& [body_name, body]: psystem) {
-    //         std::cout << body_name << std::endl;
-    //         for (int n = 0; n < body.xn.size(); n++) {
-    //             std::cout << "\t" << body.xn[n] << ", " << body.yn[n] << "  " << body.vxn[n] << ", " << body.vyn[n] << std::endl;
-    //         }
-    //     }
-    // // }
+    }
 }
 
 
-void NBodies::time_step(int t) {
+void NBodies::adaptive_time_step(int t) {
 
-    // int bodies = psystem.size();
-
-
-    // int n = 0;
     for (auto& [body_name, body]: psystem) {
-        std::vector<std::vector<double>> eta_table = blank_table, zeta_table = blank_table;
-        std::vector<Wanderer> Jander;
-        std::array<double, 2> local_eta, local_zeta;
-        std::array<double, 4> xyv;
-        double xn, yn, vxn, vyn;
-        double xnn, ynn, vxnn, vynn;
+        double x1, y1, vx1, vy1;
+        double x2, y2, vx2, vy2;
+        double rho;
 
-        xyv = body.get_nth(t);
-        xn = xyv[X], yn = xyv[Y], vxn = xyv[2], vyn = xyv[3];
+        bool insufficent_accuracy = true;
 
-        // std::cout << "VXn = " << vxn << std::endl;
-        // std::cout << "VYn = " << vyn << std::endl;
-        // std::cout << "Xn = " << xn << std::endl;
-        // std::cout << "Yn = " << yn << std::endl;
-        // std::array<double, 2> xy, vxy;
-        // xy = body.get_xy(), vxy = body.get_vxy();
-        // xy = body.get_xy(), vxy = body.get_vxy();
+        // int saftey = 0;
 
-        for (const auto& [j_name, j_body]: psystem) {
-            if (body_name != j_name) {
-                Jander.push_back(j_body);
-                // rm_j[0].push_back(j_body.)
-            }
-            // else {continue;}
+        while (insufficent_accuracy) {
+            std::tie(x1, y1, vx1, vy1) = step(body, t, body.get_time());
+            std::tie(x2, y2, vx2, vy2) = step(body, t, 2*body.get_time());
+
+            double err = euc_error({x1, y1}, {x2, y2}, {vx1, vy1}, {vx2, vy2});
+
+            if (err == 0) {rho = 2*2*2*2;}
+            else {rho = 30 * body.get_time() * delta / err;}
+
+            if (rho >= 1) {
+
+                body.set_time(2*body.get_time());
+                body.storage(x1, y1, vx1, vy1);
+                
+                insufficent_accuracy = false;
+                break;
+            } // keep x1 and make h = 2*h
+            else {
+
+                double new_time = body.get_time() * pow(rho, 1/4);
+                body.set_time(new_time);
+                // saftey += 1;
+
+                // if (saftey > 100) {
+                //     body.storage(x1, y1, vx1, vy1);
+                //     std::cout << "Hit max saftey" << std::endl;
+
+                //     break;
+                // } // just in case I missed something and the while loop will not exit
+
+            } // too much error: make h smaller
         }
-        // k1
-        // std::cout << "K1" << std::endl;
-        local_eta = acc({xn, yn}, Jander, t);
-        eta_table[X][0] =  local_eta[X];
-        eta_table[Y][0] =  local_eta[Y];
-        // local_zeta = vel({vxn, vyn}, {0, 0}, h);
-        local_zeta = {vxn, vyn};
-        // prev_eta = local_eta, prev_zeta = local_zeta;
-        zeta_table[X][0] = local_zeta[X];
-        zeta_table[Y][0] = local_zeta[Y];
-
-        // std::cout << "Eta 1" << std::endl;
-        // std::cout << eta_table[X][0] << "  " << eta_table[X][1] << "  " << eta_table[X][2] << "  " << eta_table[X][3] << std::endl;
-        // std::cout << eta_table[Y][0] << "  " << eta_table[Y][1] << "  " << eta_table[Y][2] << "  " << eta_table[Y][3] << std::endl;
-
-        // std::cout << "Zeta 1" << std::endl;
-        // std::cout << zeta_table[X][0] << "  " << zeta_table[X][1] << "  " << zeta_table[X][2] << "  " << zeta_table[X][3] << std::endl;
-        // std::cout << zeta_table[Y][0] << "  " << zeta_table[Y][1] << "  " << zeta_table[Y][2] << "  " << zeta_table[Y][3] << std::endl;
-
-        // k2
-        // std::cout << "K2" << std::endl;
-        local_eta = acc({xn + (zeta_table[X][0] * h/2), yn + (zeta_table[Y][0] * h/2)}, Jander, t);
-        eta_table[X][1] =  local_eta[X];
-        eta_table[Y][1] =  local_eta[Y];
-        // local_zeta = vel({vxn, vyn}, prev_eta, h/2);
-        local_zeta = {vxn + (eta_table[X][0] * h/2), vyn + (eta_table[Y][0] * h/2)};
-        zeta_table[X][1] = local_zeta[X];
-        zeta_table[Y][1] = local_zeta[Y];
-
-        // std::cout << "Eta 2" << std::endl;
-        // std::cout << eta_table[X][0] << "  " << eta_table[X][1] << "  " << eta_table[X][2] << "  " << eta_table[X][3] << std::endl;
-        // std::cout << eta_table[Y][0] << "  " << eta_table[Y][1] << "  " << eta_table[Y][2] << "  " << eta_table[Y][3] << std::endl;
-
-        // std::cout << "Zeta 2" << std::endl;
-        // std::cout << zeta_table[X][0] << "  " << zeta_table[X][1] << "  " << zeta_table[X][2] << "  " << zeta_table[X][3] << std::endl;
-        // std::cout << zeta_table[Y][0] << "  " << zeta_table[Y][1] << "  " << zeta_table[Y][2] << "  " << zeta_table[Y][3] << std::endl;
-
-        // k3
-        // std::cout << "K3" << std::endl;
-        local_eta = acc({xn + (zeta_table[X][1] * h/2), yn + (zeta_table[Y][1] * h/2)}, Jander, t);
-        eta_table[X][2] =  local_eta[X];
-        eta_table[Y][2] =  local_eta[Y];
-        // local_zeta = vel({vxn, vyn}, prev_eta, h/2);
-        local_zeta = {vxn + (eta_table[X][1] * h/2), vyn + (eta_table[Y][1] * h/2)};
-        zeta_table[X][2] = local_zeta[X];
-        zeta_table[Y][2] = local_zeta[Y];
-
-        // std::cout << "Eta 3" << std::endl;
-        // std::cout << eta_table[X][0] << "  " << eta_table[X][1] << "  " << eta_table[X][2] << "  " << eta_table[X][3] << std::endl;
-        // std::cout << eta_table[Y][0] << "  " << eta_table[Y][1] << "  " << eta_table[Y][2] << "  " << eta_table[Y][3] << std::endl;
-
-        // std::cout << "Zeta 3" << std::endl;
-        // std::cout << zeta_table[X][0] << "  " << zeta_table[X][1] << "  " << zeta_table[X][2] << "  " << zeta_table[X][3] << std::endl;
-        // std::cout << zeta_table[Y][0] << "  " << zeta_table[Y][1] << "  " << zeta_table[Y][2] << "  " << zeta_table[Y][3] << std::endl;
-
-        // k4
-        // std::cout << "K4" << std::endl;
-        local_eta = acc({xn + (zeta_table[X][2] * h/2), yn + (zeta_table[Y][2] * h)}, Jander, t);
-        eta_table[X][3] =  local_eta[X];
-        eta_table[Y][3] =  local_eta[Y];
-        // local_zeta = vel({vxn, vyn}, prev_eta, h);
-        local_zeta = {vxn + (eta_table[X][2] * h/2), vyn + (eta_table[Y][2] * h)};
-        zeta_table[X][3] = local_zeta[X];
-        zeta_table[Y][3] = local_zeta[Y];
-
-        // std::cout << "Eta 4" << std::endl;
-        // std::cout << eta_table[X][0] << "  " << eta_table[X][1] << "  " << eta_table[X][2] << "  " << eta_table[X][3] << std::endl;
-        // std::cout << eta_table[Y][0] << "  " << eta_table[Y][1] << "  " << eta_table[Y][2] << "  " << eta_table[Y][3] << std::endl;
-
-        // std::cout << "Zeta 4" << std::endl;
-        // std::cout << zeta_table[X][0] << "  " << zeta_table[X][1] << "  " << zeta_table[X][2] << "  " << zeta_table[X][3] << std::endl;
-        // std::cout << zeta_table[Y][0] << "  " << zeta_table[Y][1] << "  " << zeta_table[Y][2] << "  " << zeta_table[Y][3] << std::endl;
-
-        // std::cout << std::endl;
-
-        vxnn = vxn + (h/6)*(  eta_table[X][0] + (2 *  eta_table[X][1]) + (2 *  eta_table[X][2]) +  eta_table[X][3]);
-        vynn = vyn + (h/6)*(  eta_table[Y][0] + (2 *  eta_table[Y][1]) + (2 *  eta_table[Y][2]) +  eta_table[Y][3]);
-         xnn =  xn + (h/6)*( zeta_table[X][0] + (2 * zeta_table[X][1]) + (2 * zeta_table[X][2]) + zeta_table[X][3]);
-         ynn =  yn + (h/6)*( zeta_table[Y][0] + (2 * zeta_table[Y][1]) + (2 * zeta_table[Y][2]) + zeta_table[Y][3]);
-
-        // std::cout << "eta Table" << std::endl;
-        // std::cout << eta_table[X][0] << "\t" << eta_table[X][1] << "\t" << eta_table[X][2] << "\t" << eta_table[X][3] << std::endl;
-        // std::cout << eta_table[Y][0] << "\t" << eta_table[Y][1] << "\t" << eta_table[Y][2] << "\t" << eta_table[Y][3] << std::endl;
-
-        // std::cout << "zeta Table" << std::endl;
-        // std::cout << zeta_table[X][0] << "\t" << zeta_table[X][1] << "\t" << zeta_table[X][2] << "\t" << zeta_table[X][3] << std::endl;
-        // std::cout << zeta_table[Y][0] << "\t" << zeta_table[Y][1] << "\t" << zeta_table[Y][2] << "\t" << zeta_table[Y][3] << std::endl;
-
-        // std::cout << "VXnn = " << vxnn << std::endl;
-        // std::cout << "VYnn = " << vynn << std::endl;
-        // std::cout << "Xnn = " << xnn << std::endl;
-        // std::cout << "Ynn = " << ynn << std::endl;
 
 
-        // std::cout << "Xnn = " << xnn << " Ynn = " << ynn << " Vxnn = " << vxnn << " Vynn = " << vynn << std::endl; 
+        // body.storage(xnn, ynn, vxnn, vynn);
+        // return {xnn, ynn, vxnn, vynn};
+        // if (storage == 1) {body.storage1(xnn, ynn, vxnn, vynn);}
+        // else {body.storage2(xnn, ynn, vxnn, vynn);}
 
-        body.storage(xnn, ynn, vxnn, vynn);
-
-        // std::cout << std::endl;
     }
 }
+
 
 
 std::map<std::string, Wanderer> NBodies::get_system() {return NBodies::psystem;}
 
-
-// // std::array<double, 2> NBodies::acc(Wanderer Iander, std::vector<Wanderer> Jander, std::array<double, 2> eta, double h) {
-// std::array<double, 2> NBodies::acc(std::array<double, 2> xy, std::vector<Wanderer> Jander, std::array<double, 2> zeta_in, double h) {
-//     std::array<double, 2> ai = {0, 0};
-//     std::array<double, 2> rn;
-//     // std::array<double, 2> xy = Iander.get_xy();
-
-//     int length = Jander.size();
-
-//     rn[X] = xy[X] + (zeta_in[X] * h);
-//     rn[Y] = xy[Y] + (zeta_in[Y] * h);
-//     // double ri = sqrt(pow(rn[X], 2) + pow(rn[Y], 2));
-
-//     // std::cout << "Ri = " << r << std::endl; 
-
-//     for (int j = 0; j < length; j++) {
-//         std::array<double, 2> jxy = Jander[j].get_xy();
-//         // double r = pow((jxy[X] - rn[X]), 2) + pow((jxy[Y] - rn[Y]), 2);
-//         double r = sqrt(((jxy[X] - rn[X])*(jxy[X] - rn[X])) + ((jxy[Y] - rn[Y])*(jxy[Y] - rn[Y])));
-
-//         // std::cout << "Mj = " << Jander[j].get_gass() << " Rj = " << Jander[j].get_r() << " r = " << pow(r - Jander[j].get_r(), 3) << " {" << jxy[X] << ", " << jxy[Y] << "} ";
-        
-//         // double a = Jander[j].get_gass() / pow(r, 3);  // note: G is moved to G*Mj, meaning it's tied to the mass
-//         double a = Jander[j].get_gass() / (r * r * r);  // note: G is moved to G*Mj, meaning it's tied to the mass
-
-//         // std::cout << " a = " << a << std::endl;
-        
-//         ai[X] += a * (jxy[X] - rn[X]);
-//         ai[Y] += a * (jxy[Y] - rn[Y]);
-
-//         // std::cout << "Ax = " << ai[X] << " Ay = " << ai[Y] << std::endl;
-//     }
-
-//     return ai;
-
-// }
 
 
 std::array<double, 2> NBodies::acc(std::array<double, 2> xy, std::vector<Wanderer> Jander, int t) {
@@ -250,40 +117,11 @@ std::array<double, 2> NBodies::acc(std::array<double, 2> xy, std::vector<Wandere
 
 
 
-// // std::array<double, 2> NBodies::vel(Wanderer Iander, std::array<double, 2> zeta_in, double h) {
-// std::array<double, 2> NBodies::vel(std::array<double, 2> v_in, std::array<double, 2> zeta_in, double h) {
-//     std::array<double, 2> v_out;
-
-//     // std::cout << "h = " << h << std::endl;
-//     // std::cout << "Vx_in = " << v_in[X] << "\tVy_in = " << v_in[Y] << std::endl;
-//     // std::cout << "nx = " << zeta_in[X] << "\tny = " << zeta_in[Y] << std::endl;
-
-//     v_out[X] = v_in[X] + (h * zeta_in[X]);
-//     v_out[Y] = v_in[Y] + (h * zeta_in[Y]);
-
-//     // std::cout << "Vx_out = " << v_out[X] << "\tVy_out = " << v_out[Y] << std::endl; 
-
-//     // return v_in + (h * zeta_in);
-
-//     return v_out;
-
-// }
-
-
-// std::array<double, 2> NBodies::vel(Wanderer Iander, std::array<double, 2> zeta_in, double h) {
 std::array<double, 2> NBodies::vel(std::array<double, 2> v_in, std::array<double, 2> zeta_in, double h) {
     std::array<double, 2> v_out;
 
-    // std::cout << "h = " << h << std::endl;
-    // std::cout << "Vx_in = " << v_in[X] << "\tVy_in = " << v_in[Y] << std::endl;
-    // std::cout << "nx = " << zeta_in[X] << "\tny = " << zeta_in[Y] << std::endl;
-
     v_out[X] = v_in[X] + (h * zeta_in[X]);
     v_out[Y] = v_in[Y] + (h * zeta_in[Y]);
-
-    // std::cout << "Vx_out = " << v_out[X] << "\tVy_out = " << v_out[Y] << std::endl; 
-
-    // return v_in + (h * zeta_in);
 
     return v_out;
 
@@ -292,7 +130,6 @@ std::array<double, 2> NBodies::vel(std::array<double, 2> v_in, std::array<double
 
 void NBodies::write_csv(fs::path output_path) {
 
-    // int rows = table.size(), cols = table[0].size();
     int cols = psystem.size();
 
     // std::ofstream fileout(output_path);
@@ -335,4 +172,93 @@ void NBodies::write_csv(fs::path output_path) {
 void NBodies::init_table() {
     blank_table.resize(2);
     blank_table[0].resize(4), blank_table[1].resize(4);
+}
+
+
+double NBodies::euc_error(std::array<double, 2> r1, 
+                          std::array<double, 2> r2, 
+                          std::array<double, 2> v1, 
+                          std::array<double, 2> v2) {
+    
+    // auto f = [](float a, float b) -> float {return sqrt(a*a + b*b);};
+
+    double R1, R2;
+    double V1, V2;
+    double err;
+
+    err = sqrt(((r1[X] - r2[X]) + (r1[Y] - r2[Y]))*((r1[X] - r2[X]) + (r1[Y] - r2[Y])) + ((v1[X] - v2[X]) + (v1[Y] - v1[Y]))*((v1[X] - v2[X]) + (v1[Y] - v1[Y])));
+
+    return err;
+}
+
+
+std::tuple<double, double, double, double> NBodies::step(Wanderer body, int t, double h) {
+        std::vector<std::vector<double>> eta_table = blank_table, zeta_table = blank_table;
+        std::vector<Wanderer> Jander;
+        std::array<double, 2> local_eta, local_zeta;
+        std::array<double, 4> xyv;
+        double xn, yn, vxn, vyn;
+        double xnn, ynn, vxnn, vynn;
+        std::string body_name;
+
+        xyv = body.get_nth(t);
+        body_name = body.get_name();
+        xn = xyv[X], yn = xyv[Y], vxn = xyv[2], vyn = xyv[3];
+
+        for (const auto& [j_name, j_body]: psystem) {
+            if (body_name != j_name) {
+                Jander.push_back(j_body);
+                // rm_j[0].push_back(j_body.)
+            }
+            // else {continue;}
+        }
+        // k1
+        local_eta = acc({xn, yn}, Jander, t);
+        eta_table[X][0] =  local_eta[X];
+        eta_table[Y][0] =  local_eta[Y];
+
+        local_zeta = {vxn, vyn};
+        zeta_table[X][0] = local_zeta[X];
+        zeta_table[Y][0] = local_zeta[Y];
+
+        // k2
+        local_eta = acc({xn + (zeta_table[X][0] * h/2), yn + (zeta_table[Y][0] * h/2)}, Jander, t);
+        eta_table[X][1] =  local_eta[X];
+        eta_table[Y][1] =  local_eta[Y];
+
+        local_zeta = {vxn + (eta_table[X][0] * h/2), vyn + (eta_table[Y][0] * h/2)};
+        zeta_table[X][1] = local_zeta[X];
+        zeta_table[Y][1] = local_zeta[Y];
+
+        // k3
+        local_eta = acc({xn + (zeta_table[X][1] * h/2), yn + (zeta_table[Y][1] * h/2)}, Jander, t);
+        eta_table[X][2] =  local_eta[X];
+        eta_table[Y][2] =  local_eta[Y];
+
+        local_zeta = {vxn + (eta_table[X][1] * h/2), vyn + (eta_table[Y][1] * h/2)};
+        zeta_table[X][2] = local_zeta[X];
+        zeta_table[Y][2] = local_zeta[Y];
+
+        // k4
+        local_eta = acc({xn + (zeta_table[X][2] * h/2), yn + (zeta_table[Y][2] * h)}, Jander, t);
+        eta_table[X][3] =  local_eta[X];
+        eta_table[Y][3] =  local_eta[Y];
+
+        local_zeta = {vxn + (eta_table[X][2] * h/2), vyn + (eta_table[Y][2] * h)};
+        zeta_table[X][3] = local_zeta[X];
+        zeta_table[Y][3] = local_zeta[Y];
+
+        vxnn = vxn + (h/6)*(  eta_table[X][0] + (2 *  eta_table[X][1]) + (2 *  eta_table[X][2]) +  eta_table[X][3]);
+        vynn = vyn + (h/6)*(  eta_table[Y][0] + (2 *  eta_table[Y][1]) + (2 *  eta_table[Y][2]) +  eta_table[Y][3]);
+        xnn =  xn + (h/6)*( zeta_table[X][0] + (2 * zeta_table[X][1]) + (2 * zeta_table[X][2]) + zeta_table[X][3]);
+        ynn =  yn + (h/6)*( zeta_table[Y][0] + (2 * zeta_table[Y][1]) + (2 * zeta_table[Y][2]) + zeta_table[Y][3]);
+
+        return {xnn, ynn, vxnn, vynn};
+    
+}
+
+
+
+void NBodies::adjust_tsize(double rho) {
+    tsize = tsize * pow(rho, .25);
 }

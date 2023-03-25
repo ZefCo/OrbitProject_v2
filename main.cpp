@@ -3,13 +3,20 @@
 // #include <math.h>
 #include "Wanderer.h"
 #include "OrbitProject.h"
+// #include "NBodies_ats.h"
 #include "NBodies.h"
 
-// g++ main.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies.cpp -o OP.exe
+// Windows complier commands
+//          RG4
+//      g++ main.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies.cpp -o OP.exe
+//          RG4 with adaptive step
+//      g++ main.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies_ats.cpp -o OP_ats.exe
+// https://nssdc.gsfc.nasa.gov/planetary/factsheet/venusfact.html
 
 int main() {
     double h;
     int time_steps;
+    double G = 6.67408E-11;
 
     std::cout << "Input the number of time steps - days (int): ";
     // std::cout << "Value set to 2" << std::endl;
@@ -28,7 +35,8 @@ int main() {
 
     system = create_system(ao_filename);
 
-    NBodies motion(system, time_steps, h);
+    // NBodies motion(system, time_steps, h, 10E-6, G); // adaptive time step
+    NBodies motion(system, time_steps, h, G); // non adaptive time step
 
     motion.orbits();
 

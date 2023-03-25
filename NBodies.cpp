@@ -1,8 +1,8 @@
 #include "NBodies.h"
 
 
-NBodies::NBodies(std::map<std::string, Wanderer> psystem, int tsteps, double h):
-    psystem(psystem), tsteps(tsteps), h(h) {}
+NBodies::NBodies(std::map<std::string, Wanderer> psystem, int tsteps, double h, double G):
+    psystem(psystem), tsteps(tsteps), h(h), G(G) {}
 
 
 NBodies::~NBodies() {}

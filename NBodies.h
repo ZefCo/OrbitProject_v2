@@ -3,19 +3,18 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <tuple>
 #include "Wanderer.h"
 
 namespace fs = std::filesystem;
 
-const double G = 6.67408E-11;  // changing G from [m**3 / (kg s**2)] to [AU**3 / (e d**2)] where e = mass of the earth and d = day
-// const double G = 880E-12;  // changing G from [m**3 / (kg s**2)] to [AU**3 / (e d**2)] where e = mass of the earth and d = day
-// const double G = 1;  // changing G from [m**3 / (kg s**2)] to [AU**3 / (e d**2)] where e = mass of the earth and d = day
+// const double G = 6.67408E-11;  // changing G from [m**3 / (kg s**2)] to [AU**3 / (e d**2)] where e = mass of the earth and d = day
 const int X = 0, Y = 1;
 
 
 class NBodies {
     public:
-        NBodies(std::map<std::string, Wanderer> psystem, int tsteps, double h);
+        NBodies(std::map<std::string, Wanderer> psystem, int tsteps, double h, double G);
         ~NBodies();
 
         void orbits();
@@ -46,6 +45,7 @@ class NBodies {
         int tsteps;
         double h;
         int bodies = psystem.size();
+        const double G;
 
         std::map<std::string, Wanderer> psystem;  // I'm going to be accessing this a lot so it really doesn't make sense to make this private
 };
