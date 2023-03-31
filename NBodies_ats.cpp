@@ -9,6 +9,7 @@ NBodies::~NBodies() {}
 
 
 void NBodies::orbits() {
+    safties = 0;
 
     init_table();
 
@@ -26,13 +27,22 @@ void NBodies::orbits() {
         adaptive_time_step(t);
 
         for (auto& [body_name, body]: psystem) {
-          body.nth(t + 1);  // note to self: the reason for storing the body xnn etc and then pushing later: I want the system to move all at once
+            body.nth(t + 1);  // note to self: the reason for storing the body xnn etc and then pushing later: I want the system to move all at once
             // and not be influenced by where things are seperetly.
+            // std::cout << body_name << std::endl;
+            // std::cout << "\t" << "x = " << body.xn[t + 1] << std::endl;
+            // std::cout << "\t" << "y = " << body.yn[t + 1] << std::endl;
+            // std::cout << "\t" << "vx = " << body.vxn[t + 1] << std::endl;
+            // std::cout << "\t" << "vy = " << body.vyn[t + 1] << std::endl;
+            // std::cout << "\t" << "h = " << body.get_time() << std::endl;
+
         }
 
         if ((t % 10000) == 0) {std::cout << "Finished step " << t << std::endl;}
 
     }
+
+    std::cout << "Total number of safty incidents = " << safties << std::endl;
 }
 
 
@@ -45,47 +55,67 @@ void NBodies::adaptive_time_step(int t) {
 
         bool insufficent_accuracy = true;
 
-        // int saftey = 0;
+        int saftey = 0;
 
         while (insufficent_accuracy) {
+
+            // std::cout << "Initial Time = " << body.get_time() << std::endl;
+
             std::tie(x1, y1, vx1, vy1) = step(body, t, body.get_time());
             std::tie(x2, y2, vx2, vy2) = step(body, t, 2*body.get_time());
 
-            double err = euc_error({x1, y1}, {x2, y2}, {vx1, vy1}, {vx2, vy2});
+            double err = euc_error_4D({x1, y1}, {x2, y2}, {vx1, vy1}, {vx2, vy2});
+            // double err = euc_error_2D({x1, y1}, {x2, y2});
+            // std::cout << "Err = " << err << std::endl;
 
             if (err == 0) {rho = 2*2*2*2;}
-            else {rho = 30 * body.get_time() * delta / err;}
+            else {rho = body.get_time() * delta / err;}
+            std::cout << body.get_name() << ": " << body.get_time() << ", " << rho << std::endl;
 
-            if (rho >= 1) {
+            if (rho < 1.0) {
+
+                // std::cout << "Rho = " << rho << std::endl; 
+                // std::cout << "current time = " << body.get_time() << std::endl;
+                double new_time = body.get_time() * pow(rho, 0.25);
+                
+                // std::cout << "New time = " << new_time << std::endl;
+                body.set_time(new_time);
+                
+                saftey += 1;
+
+                if (saftey > 100) {
+                    body.storage(x1, y1, vx1, vy1);
+                    // std::cout << "Hit max saftey" << std::endl;
+
+                    // std::cout << "Rho = " << rho << std::endl;
+
+                    // if (rho > 1) {std::cout << "What the hell? It's greater then 1" << std::endl;}
+                    // else if (rho == 1) {std::cout << "What the actual fuck?" << std::endl;}
+                    // else if (rho < 1) {std::cout << "What the shit? It's less then 1" << std::endl;}
+                    // else {std::cout << "OK c++ is just mocking me" << std::endl;}
+
+                    // std::exit(1);
+                    safties += 1;
+
+                    break;
+                } // just in case I missed something and the while loop will not exit
+            } // too much error: make h smaller
+            else {
 
                 body.set_time(2*body.get_time());
                 body.storage(x1, y1, vx1, vy1);
                 
+                // insufficent_accuracy = false;
+                // std::cout << "Rho = " << rho << std::endl;
+                // std::cout << "breaking out" << std::endl;
                 insufficent_accuracy = false;
                 break;
             } // keep x1 and make h = 2*h
-            else {
-
-                double new_time = body.get_time() * pow(rho, 1/4);
-                body.set_time(new_time);
-                // saftey += 1;
-
-                // if (saftey > 100) {
-                //     body.storage(x1, y1, vx1, vy1);
-                //     std::cout << "Hit max saftey" << std::endl;
-
-                //     break;
-                // } // just in case I missed something and the while loop will not exit
-
-            } // too much error: make h smaller
         }
-
-
         // body.storage(xnn, ynn, vxnn, vynn);
         // return {xnn, ynn, vxnn, vynn};
         // if (storage == 1) {body.storage1(xnn, ynn, vxnn, vynn);}
         // else {body.storage2(xnn, ynn, vxnn, vynn);}
-
     }
 }
 
@@ -175,10 +205,10 @@ void NBodies::init_table() {
 }
 
 
-double NBodies::euc_error(std::array<double, 2> r1, 
-                          std::array<double, 2> r2, 
-                          std::array<double, 2> v1, 
-                          std::array<double, 2> v2) {
+double NBodies::euc_error_4D(std::array<double, 2> r1, 
+                             std::array<double, 2> r2, 
+                             std::array<double, 2> v1, 
+                             std::array<double, 2> v2) {
     
     // auto f = [](float a, float b) -> float {return sqrt(a*a + b*b);};
 
@@ -186,10 +216,24 @@ double NBodies::euc_error(std::array<double, 2> r1,
     double V1, V2;
     double err;
 
-    err = sqrt(((r1[X] - r2[X]) + (r1[Y] - r2[Y]))*((r1[X] - r2[X]) + (r1[Y] - r2[Y])) + ((v1[X] - v2[X]) + (v1[Y] - v1[Y]))*((v1[X] - v2[X]) + (v1[Y] - v1[Y])));
+    err = (1/30) * sqrt(((r1[X] - r2[X])*(r1[X] - r2[X])) + ((r1[Y] - r2[Y])*(r1[Y] - r2[Y])) + ((v1[X] - v2[X])*(v1[X] - v1[X])) + ((v1[Y] - v2[Y])*(v1[Y] - v1[Y])));
 
     return err;
 }
+
+
+double NBodies::euc_error_2D(std::array<double, 2> r1, 
+                             std::array<double, 2> r2) {
+    
+
+    double R1, R2;
+    double err;
+
+    err = sqrt(((r1[X] - r2[X])*(r1[X] - r2[X])) + ((r1[Y] - r2[Y])*(r1[Y] - r2[Y])));
+
+    return err;
+}
+
 
 
 std::tuple<double, double, double, double> NBodies::step(Wanderer body, int t, double h) {
@@ -240,11 +284,11 @@ std::tuple<double, double, double, double> NBodies::step(Wanderer body, int t, d
         zeta_table[Y][2] = local_zeta[Y];
 
         // k4
-        local_eta = acc({xn + (zeta_table[X][2] * h/2), yn + (zeta_table[Y][2] * h)}, Jander, t);
+        local_eta = acc({xn + (zeta_table[X][2] * h), yn + (zeta_table[Y][2] * h)}, Jander, t);
         eta_table[X][3] =  local_eta[X];
         eta_table[Y][3] =  local_eta[Y];
 
-        local_zeta = {vxn + (eta_table[X][2] * h/2), vyn + (eta_table[Y][2] * h)};
+        local_zeta = {vxn + (eta_table[X][2] * h), vyn + (eta_table[Y][2] * h)};
         zeta_table[X][3] = local_zeta[X];
         zeta_table[Y][3] = local_zeta[Y];
 

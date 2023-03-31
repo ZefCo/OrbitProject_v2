@@ -109,3 +109,22 @@ void write_csv(fs::path output_path, std::map<std::string, Wanderer> planet_data
     fileout.close();
 
 }
+
+
+std::tuple<double, double, double> import_settings(fs::path settings_file) {
+    Json::Value root;
+    std::ifstream file(settings_file);
+    file >> root;
+    // std::tuple<double, double, double> settings;
+
+    double G = root["G"].asDouble();
+    double delta = root["delta"].asDouble();
+    double time_step = root["time_step"].asDouble();
+
+    file.close();
+
+    return {G, delta, time_step};
+
+
+
+}
