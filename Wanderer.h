@@ -4,7 +4,10 @@
 #include <vector>
 #include <array>
 #include <iostream>
+#include <tuple>
 // #include <math.h>
+
+// const int X = 0, Y = 1;
 
 class Wanderer {
     public:
@@ -35,7 +38,7 @@ class Wanderer {
         void nth(int n);
 
         // returns the nth position (index 0 and 1), and veloctiy (index 2 and 3)
-        std::array<double, 4> get_nth(int n);
+        std::tuple<double, double, double, double> get_nth(int n);
 
         // stores values for later pushing
         void storage(double xu, double yu, double vxu, double vyu);
@@ -44,21 +47,28 @@ class Wanderer {
         // stores the values for later comparison to determine the step size
         void storage2(double xu, double yu, double vxu, double vyu);
 
-        // stores the Xn positions in a vector
-        std::vector<double> xn;
-        // stores the Yn positions in a vector
-        std::vector<double> yn;
-        // stores the VXn positions in a vector
-        std::vector<double> vxn;
-        // stores the VYn positions in a vector
-        std::vector<double> vyn;
-
         // sets the G*mass value of the Wanderer
         void Gmass(double G);
 
         void set_time(double h);
 
         double get_time();
+
+        // I really need to go through this and find what I'm not using any more
+        void update_position(double x, double y, double vx, double vy);
+
+        //
+        std::array<std::array<double, 4>, 2> get_dv();
+        //
+        std::array<std::array<double, 4>, 2> get_dr();
+
+        //
+        void update_dv(int k);
+        //
+        void update_dr(int k);
+
+        void store_dr(std::array<double, 2> store);
+        void store_dv(std::array<double, 2> store);
 
 
     private:
@@ -91,5 +101,21 @@ class Wanderer {
         double vy2_store;
 
         double tsize;
+
+        std::array<std::array<double, 4>, 2> dv;
+        std::array<std::array<double, 4>, 2> dr;
+
+        std::array<double, 2> dv_store;
+        std::array<double, 2> dr_store;
+
+        // stores the Xn positions in a vector
+        std::vector<double> xn;
+        // stores the Yn positions in a vector
+        std::vector<double> yn;
+        // stores the VXn positions in a vector
+        std::vector<double> vxn;
+        // stores the VYn positions in a vector
+        std::vector<double> vyn;
+
 
 };
