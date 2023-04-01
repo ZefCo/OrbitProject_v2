@@ -45,7 +45,8 @@ class NBodies {
         std::vector<std::vector<double>> blank_table;
 
         // Returns the abs between point 1 and point 2
-        double euc_error(std::array<double, 2> r1, std::array<double, 2> r2, std::array<double, 2> v1, std::array<double, 2> v2);
+        double euc_error_4D(std::array<double, 2> r1, std::array<double, 2> r2, std::array<double, 2> v1, std::array<double, 2> v2);
+        double euc_error_2D(std::array<double, 2> r1, std::array<double, 2> r2);
 
         // A single step but with an adaptive step size
         // Finds two time steps, one at h and one at 2h, then determines rho = 30*h*delta/sqrt(e_x**2 + e_y**2). If rho > 1 we keep
@@ -65,6 +66,8 @@ class NBodies {
         const double delta;
         const double tsize0;
         const double G;
+
+        int safties;
 
         std::map<std::string, Wanderer> psystem;
 };

@@ -69,6 +69,8 @@ std::map<std::string, Wanderer> create_system(fs::path filename) {
 
 void write_csv(fs::path output_path, std::map<std::string, Wanderer> planet_data, int rows) {
 
+    double xn, yn, vxn, vyn;
+
     std::cout << "Writing to file:\n" << output_path << std::endl;
 
     // int rows = table.size(), cols = table[0].size();
@@ -90,15 +92,25 @@ void write_csv(fs::path output_path, std::map<std::string, Wanderer> planet_data
 
         std::string row_data;
         // fileout << std::to_string(t);
-        row_data = std::to_string(t);
+        // row_data = std::to_string(t);
+        fileout << t << ",";
         // std::cout << t;
-        
+
         for (auto& [name, body]: planet_data) {
-            row_data = row_data + "," + std::to_string(body.xn[t]) + "," + std::to_string(body.yn[t]);
+            std::tie(xn, yn, vxn, vyn) = body.get_nth(t);
+            fileout << xn << "," << yn << ",";
+            // row_data = row_data + "," + std::to_string(xn) + "," + std::to_string(yn);
             // std::cout << "\t" << body.xn[t] << "\t" << body.yn[t];
         }
+
+        fileout << "\n";
+
+        // for (auto& [name, body]: planet_data) {
+        //     row_data = row_data + "," + std::to_string(body.xn[t]) + "," + std::to_string(body.yn[t]);
+        //     // std::cout << "\t" << body.xn[t] << "\t" << body.yn[t];
+        // }
         
-        row_data = row_data + "\n";
+        // row_data = row_data + "\n";
         // std::cout << "\n";
 
         // std::cout << row_data;
@@ -107,5 +119,24 @@ void write_csv(fs::path output_path, std::map<std::string, Wanderer> planet_data
     }
 
     fileout.close();
+
+}
+
+
+std::tuple<double, double, double> import_settings(fs::path settings_file) {
+    Json::Value root;
+    std::ifstream file(settings_file);
+    file >> root;
+    // std::tuple<double, double, double> settings;
+
+    double G = root["G"].asDouble();
+    double delta = root["delta"].asDouble();
+    double time_step = root["time_step"].asDouble();
+
+    file.close();
+
+    return {G, delta, time_step};
+
+
 
 }

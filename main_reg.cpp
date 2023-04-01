@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <tuple>
 // #include <math.h>
 #include "Wanderer.h"
 #include "OrbitProject.h"
@@ -8,24 +9,31 @@
 
 // Windows complier commands
 //          RG4
-//      g++ main.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies.cpp -o OP.exe
+//      g++ main_reg.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies.cpp -o OP_reg.exe
 //          RG4 with adaptive step
-//      g++ main.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies_ats.cpp -o OP_ats.exe
+//      g++ main_ats.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies_ats.cpp -o OP_ats.exe
 // https://nssdc.gsfc.nasa.gov/planetary/factsheet/venusfact.html
 
 int main() {
-    double h;
     int time_steps;
-    double G = 6.67408E-11;
+    double h;
+    double G;
+    double delta;
+
+    // time_steps = 5;
+    // std::cout << "Input a value for h (double): ";
+    // std::cout << "Step size set to 60*60*24 seconds (seconds in a day)" << std::endl << std::endl;
+
+    std::tie(G, delta, h) = import_settings(fs::current_path() / "Settings.json");
+    // std::cin >> h;
+    // h = 60 * 60 * 24;
+    std::cout << "G = " << G << std::endl;
+    // std::cout << "delta = " << delta << std::endl;  // delta not needed for this one
+    std::cout << "h = " << h << std::endl;
 
     std::cout << "Input the number of time steps - days (int): ";
     // std::cout << "Value set to 2" << std::endl;
     std::cin >> time_steps;
-    // time_steps = 5;
-    // std::cout << "Input a value for h (double): ";
-    std::cout << "Step size set to 60*60*24 seconds (seconds in a day)" << std::endl << std::endl;
-    // std::cin >> h;
-    h = 60 * 60 * 24;
 
     auto ts = std::chrono::high_resolution_clock::now();
     std::map<std::string, Wanderer> system;

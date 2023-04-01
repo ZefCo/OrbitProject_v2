@@ -9,7 +9,7 @@ Wanderer::Wanderer(double mass,
                    double vx, 
                    double vy, 
                    std::string name):
-mass(mass), x(x), y(y), vx(vx), vy(vy), name(name){}
+mass(mass), x(x), y(y), vx(vx), vy(vy), name(name){update_position(x, y, vx, vy);}
 
 
 Wanderer::~Wanderer() {}
@@ -32,8 +32,21 @@ std::array<double, 2> Wanderer::get_xy() {return {x, y};}
 
 std::array<double, 2> Wanderer::get_vxy() {return {vx, vy};}
 
+std::array<std::array<double, 4>, 2> Wanderer::get_dr() {return dr;}
+std::array<std::array<double, 4>, 2> Wanderer::get_dv() {return dv;}
 
-std::array<double, 4> Wanderer::get_nth(int n) {return {xn[n], yn[n], vxn[n], vyn[n]};}
+std::tuple<double, double, double, double> Wanderer::get_nth(int n) {
+    double x, y, vx, vy;
+    x = xn[n]; y = yn[n]; vx = vxn[n]; vy = vyn[n];
+
+    return {x, y, vx, vy};
+}
+
+void Wanderer::update_dr(int k) {dr[0][k] = dr_store[0]; dr[1][k] = dr_store[1];}
+void Wanderer::update_dv(int k) {dv[0][k] = dv_store[0]; dr[1][k] = dv_store[1];}
+
+void Wanderer::store_dr(std::array<double, 2> store) {dr_store = store;}
+void Wanderer::store_dv(std::array<double, 2> store) {dv_store = store;}
 
 
 void Wanderer::nth(int n) {
@@ -41,6 +54,14 @@ void Wanderer::nth(int n) {
     yn[n] = y_store;
     vxn[n] = vx_store;
     vyn[n] = vy_store;
+}
+
+
+void Wanderer::update_position(double x, double y, double vx, double vy) {
+    xn.push_back(x);
+    yn.push_back(y);
+    vxn.push_back(vx);
+    vyn.push_back(vy);
 }
 
 
