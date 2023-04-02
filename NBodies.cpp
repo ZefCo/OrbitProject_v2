@@ -1,317 +1,225 @@
 #include "NBodies.h"
 
+// something is odd with the k2 values... e-300? It might not be storing the correct values and indexing the wrong area.
 
 NBodies::NBodies(std::map<std::string, Wanderer> psystem, int tsteps, double h, double G):
-    psystem(psystem), tsteps(tsteps), h(h), G(G) {}
-
+psystem(psystem), tsteps(tsteps), h(h), G(G), bodies(psystem.size()) {}
 
 NBodies::~NBodies() {}
 
 
-void NBodies::orbits() {
 
-    init_table();
-
-    for (auto& [body_name, body]: psystem) {
-        body.Gmass(G);
-        // body.set_vec_size(tsteps);
-    }
-
-    for (int t = 0; t < NBodies::tsteps; t++) {
-        time_step(t);
-
-        // for (auto& [body_name, body]: psystem) {
-        //     body.nth(t + 1);  // note to self: the reason for storing the body xnn etc and then pushing later: I want the system to move all at once
-        //     // and not be influenced by where things are seperetly.
-
-        //     // std::cout << body_name << std::endl;
-        //     // std::cout << body.xn[t] << ", " << body.yn[t] << "\t" << body.vxn[t] << ", " << body.vyn[t] << std::endl; 
-        //     // std::cout << body.xn[t + 1] << ", " << body.yn[t + 1] << "\t" << body.vxn[t + 1] << ", " << body.vyn[t + 1] << std::endl; 
-
-        //     // for (int n = 0; n < body.xn.size(); n++) {
-        //     //     std::cout << "\t" << body.xn[n] << ", " << body.yn[n] << "  " << body.vxn[n] << ", " << body.vyn[n] << std::endl;
-        //     // }
-        //     // std::array<double, 4> xyv = body.get_nth(t + 1);
-        //     // std::cout << body_name << " x = " << xyv[X] << " y = " << xyv[Y] << " vx = " << xyv[2] << " vy = " << xyv[3] << std::endl << std::endl;
-        // }
-
-        if ((t % 10000) == 0) {std::cout << "Finished step " << t << std::endl;}
-    }
-
-    // // for (int t = 0; t < NBodies::tsteps; t++) {
-    //     for (auto& [body_name, body]: psystem) {
-    //         std::cout << body_name << std::endl;
-    //         for (int n = 0; n < body.xn.size(); n++) {
-    //             std::cout << "\t" << body.xn[n] << ", " << body.yn[n] << "  " << body.vxn[n] << ", " << body.vyn[n] << std::endl;
-    //         }
-    //     }
-    // // }
-}
+void NBodies::orbits() 
+{for (int t = 0; t < tsteps; t++) {time_step(t); if ((t % 10000) == 0) {std::cout << "Finished step " << t << std::endl;}}}
 
 
-void NBodies::time_step(int t) {
 
-    // k1
-    for (auto& [body_name, body]: psystem) {
-        std::vector<std::vector<double>> dr_table = blank_table, dv_table = blank_table;
-        std::vector<Wanderer> Jander;
-        std::array<double, 2> dr_local, dv_local;
-        std::array<double, 4> xyv;
-        double xn, yn, vxn, vyn;
-        double xnn, ynn, vxnn, vynn;
-        double h;
+void NBodies::init_system()
+{for (auto& [body_name, body]: psystem) {body.set_gass(G); body.clear_dr(); body.clear_dv();
+double x0, y0, vx0, vy0;
+std::tie(x0, y0, vx0, vy0) = body.get_nth(0);
 
-        std::tie(xn, yn, vxn, vyn) = body.get_nth(t);
-        h = body.get_time();
+std::cout << body_name << ": x0 = " << x0 << " y0 = " << y0 << " vx0 = " << vx0 << " vy0 = " << vy0 << std::endl;}}
 
-        for (const auto& [j_name, j_body]: psystem) {
-            if (body_name != j_name) {
-                Jander.push_back(j_body);
-                // rm_j[0].push_back(j_body.)
-            }
-            // else {continue;}
-        }
 
-        dr_local = vel(body, t, 0);
-        dv_local = acc(body, Jander, t, 0);
 
-        body.store_dr(dr_local);
-        body.store_dv(dv_local);
+void NBodies::time_step(int t)
+{
 
-    }
-
-    for (auto& [body_name, body]: psystem) {body.update_dr(0); body.update_dv(0);}
-
-    // k2-4
-    for (int k = 1; k < 4; k++) {
+    std::cout << "#### " << t << " ####" << std::endl;
+    
+    for (int kn = 0; kn < 4; kn++) {
+        int k = kn - 1;
+        // std::cout << "k = " << k << " kn = " << kn << std::endl;
+        if (k < 0) {k = 0;} // the k values for a given body are set to 0, so indexing with kn = 0 and k = 0 means the return values are 0.
+                            // it's a little bit of work to be super lazy: I can use the same function over and over with no alteration, just
+                            // need to make sure that the tables are set to 0 at the start of the loop
+        
         for (auto& [body_name, body]: psystem) {
-            std::vector<std::vector<double>> dr_table = blank_table, dv_table = blank_table;
             std::vector<Wanderer> Jander;
-            std::array<double, 2> dr_local, dv_local;
-            std::array<double, 4> xyv;
-            double xn, yn, vxn, vyn;
-            double xnn, ynn, vxnn, vynn;
-            double h;
+            double dvx, dvy, drx, dry;
 
-            std::tie(xn, yn, vxn, vyn) = body.get_nth(t);
-            h = body.get_time();
-
-            for (const auto& [j_name, j_body]: psystem) {
-                if (body_name != j_name) {
-                    Jander.push_back(j_body);
-                    // rm_j[0].push_back(j_body.)
-                }
-                // else {continue;}
+            for (auto& [jody_name, jody]: psystem) {
+                if (body_name != jody_name) {Jander.push_back(jody);}
             }
 
-            dr_local = vel(body, t, k - 1);
-            dv_local = acc(body, Jander, t, k - 1);
+            std::tie(drx, dry) = vel(body, t, k);  // returns dr/dt -> uses dv/dt to find the k value
+            std::tie(dvx, dvy) = acc(body, Jander, t, k);  // returns dv/dt -> uses dr/dt to find the k vaule
 
-            body.store_dr(dr_local);
-            body.store_dv(dv_local);
-
+            body.store_dr({drx, dry});
+            body.store_dv({dvx, dvy});
         }
 
-        for (auto& [body_name, body]: psystem) {body.update_dr(k); body.update_dv(k);}
+        for (auto& [body_name, body]: psystem) {
+            double dvx, dvy, drx, dry;
+
+            std::tie(drx, dry) = body.get_dr_store();
+            std::tie(dvx, dvy) = body.get_dv_store();
+
+            body.update_dr({drx, dry}, kn);
+            body.update_dv({dvx, dvy}, kn);
+        }
     }
+
+    // std::cout << "Finished k for loop" << std::endl;
+
+    // if (t > 124){
+    // for (auto& [body_name, body]: psystem) {
+    //     double drx, dry, dvx, dvy;
+    //     std::cout << body_name << " initial k values" << std::endl;
+    //     for (int kk = 0; kk < 4; kk++) {
+    //         std::tie(drx, dry) = body.get_dr(kk);
+    //         std::tie(dvx, dvy) = body.get_dv(kk);
+    //         std::cout << "k = " << kk << " drx = " << drx << " dry = " << dry << " dvx = " << " " << dvx << " dvy = " << dvy << std::endl;
+    // }}}
 
     for (auto& [body_name, body]: psystem) {
-        std::array<std::array<double, 4>, 2> dr;
-        std::array<std::array<double, 4>, 2> dv;
-        std::array<double, 4> xvy;
-        double xn, yn, vxn, vyn;
         double xnn, ynn, vxnn, vynn;
-        double h;
 
-        h = body.get_time();
-
-        dr = body.get_dr(); dv = body.get_dv();
+        // instead of grabbing vectors and such I'm just going to grab each value individually
+        // helps keep my sanity
+        double xn, yn, vxn, vyn;
+        double drx1, drx2, drx3, drx4;
+        double dry1, dry2, dry3, dry4;
+        double dvx1, dvx2, dvx3, dvx4;
+        double dvy1, dvy2, dvy3, dvy4;
 
         std::tie(xn, yn, vxn, vyn) = body.get_nth(t);
+        std::tie(drx1, dry1) = body.get_dr(0); std::tie(drx2, dry2) = body.get_dr(1); std::tie(drx3, dry3) = body.get_dr(2); std::tie(drx4, dry4) = body.get_dr(3);
+        std::tie(dvx1, dvy1) = body.get_dv(0); std::tie(dvx2, dvy2) = body.get_dv(1); std::tie(dvx3, dvy3) = body.get_dv(2); std::tie(dvx4, dvy4) = body.get_dv(3);
+        
+        // std::cout << body_name << std::endl;
+        // std::cout << "h = " << h << std::endl;
+        // std::cout << "xn = " << xn << " yn = " << yn << " vxn = " << vxn << " vyn = " << vyn << std::endl;
+        // std::cout << "drx1 = " << drx1 << " drx2 = " << drx2 << " drx3 = " << drx3 << " drx4 = " << drx4 << std::endl;
+        // std::cout << "dry1 = " << dry1 << " dry2 = " << dry2 << " dry3 = " << dry3 << " dry4 = " << dry4 << std::endl;
+        // std::cout << "dvx1 = " << dvx1 << " dvx2 = " << dvx2 << " dvx3 = " << dvx3 << " dvx4 = " << dvx4 << std::endl;
+        // std::cout << "dvx1 = " << dvy1 << " dvx2 = " << dvy2 << " dvx3 = " << dvy3 << " dvx4 = " << dvy4 << std::endl;
 
-        xnn =   xn + (h / 6.0) * (dr[X][0] + 2.0*dr[X][1] + 2.0*dr[X][2] + dr[X][3]);
-        ynn =   yn + (h / 6.0) * (dr[Y][0] + 2.0*dr[Y][1] + 2.0*dr[Y][2] + dr[Y][3]);
-        vxnn = vxn + (h / 6.0) * (dv[X][0] + 2.0*dv[X][1] + 2.0*dv[X][2] + dv[X][3]);
-        vynn = vyn + (h / 6.0) * (dv[Y][0] + 2.0*dv[Y][1] + 2.0*dv[Y][2] + dv[Y][3]);
+        std::cout << "Updating: " << body_name << std::endl;
+        
+        xnn = xn + (h / 6.0) * (drx1 + 2*drx2 + 2*drx3 + drx4);
+        ynn = yn + (h / 6.0) * (dry1 + 2*dry2 + 2*dry3 + dry4);
+        
+        vxnn = vxn + (h / 6.0) * (dvx1 + 2*dvx2 + 2*dvx3 + dvx4);
+        vynn = vyn + (h / 6.0) * (dvy1 + 2*dvy2 + 2*dvy3 + dvy4);
 
-        body.update_position(xnn, ynn, vxnn, vynn);
 
+        if (xn != xn) {std::cout << "Failure at xn: " << xn << std::endl;}
+        if (yn != yn) {std::cout << "Failure at yn: " << yn << std::endl;}
+        if (vxn != vxn) {std::cout << "Failure at vxn: " << vxn << std::endl;}
+        if (vyn != vyn) {std::cout << "Failure at vyn: " << vyn << std::endl;}
+
+        if (h != h) {std::cout << "Failuer at h";}
+
+        if (drx1 != drx1) {std::cout << "Failuer at drx1: " << drx1 << std::endl;}
+        if (drx2 != drx2) {std::cout << "Failuer at drx2: " << drx2 << std::endl;}
+        if (drx3 != drx3) {std::cout << "Failuer at drx3: " << drx3 << std::endl;}
+        if (drx4 != drx4) {std::cout << "Failuer at drx4: " << drx4 << std::endl;}
+
+        if (dry1 != dry1) {std::cout << "Failuer at dry1: " << dry1 << std::endl;}
+        if (dry2 != dry2) {std::cout << "Failuer at dry2: " << dry2 << std::endl;}
+        if (dry3 != dry3) {std::cout << "Failuer at dry3: " << dry3 << std::endl;}
+        if (dry4 != dry4) {std::cout << "Failuer at dry4: " << dry4 << std::endl;}
+
+        if (dvx1 != dvx1) {std::cout << "Failuer at dvx1: " << dvx1 << std::endl;}
+        if (dvx2 != dvx2) {std::cout << "Failuer at dvx2: " << dvx2 << std::endl;}
+        if (dvx3 != dvx3) {std::cout << "Failuer at dvx3: " << dvx3 << std::endl;}
+        if (dvx4 != dvx4) {std::cout << "Failuer at dvx4: " << dvx4 << std::endl;}
+
+        if (dvy1 != dvy1) {std::cout << "Failuer at dvy1: " << dvy1 << std::endl;}
+        if (dvy2 != dvy2) {std::cout << "Failuer at dvy2: " << dvy2 << std::endl;}
+        if (dvy3 != dvy3) {std::cout << "Failuer at dvy3: " << dvy3 << std::endl;}
+        if (dvy4 != dvy4) {std::cout << "Failuer at dvy4: " << dvy4 << std::endl;}
+
+        if (xnn != xnn) {std::cout << "Failuer at xnn: " << xnn << std::endl;}
+        if (ynn != ynn) {std::cout << "Failuer at ynn: " << ynn << std::endl;}
+        if (vxnn != vxnn) {std::cout << "Failuer at vxnn: " << vxnn << std::endl;}
+        if (vynn != vynn) {std::cout << "Failuer at vynn: " << vynn << std::endl;}
+
+        // std::cout << body_name << " @ t = " << t << std::endl;
+        // std::cout << "xnn = " << xnn << " ynn = " << ynn << " vxnn = " << vxnn << " vynn = " << vynn << std::endl;
+
+        // std::cout << "Adding nth" << std::endl;
+        body.add_nth(xnn, ynn, vxnn, vynn);
+        // std::cout << "clearning dr" << std::endl;
+        body.clear_dr(); 
+        // std::cout << "clearing dv" << std::endl;
+        body.clear_dv();
     }
+    std::cout << "Finished updating bodies" << std::endl;
 }
 
 
-std::map<std::string, Wanderer> NBodies::get_system() {return NBodies::psystem;}
 
 
-// // std::array<double, 2> NBodies::acc(Wanderer Iander, std::vector<Wanderer> Jander, std::array<double, 2> eta, double h) {
-// std::array<double, 2> NBodies::acc(std::array<double, 2> xy, std::vector<Wanderer> Jander, std::array<double, 2> zeta_in, double h) {
-//     std::array<double, 2> ai = {0, 0};
-//     std::array<double, 2> rn;
-//     // std::array<double, 2> xy = Iander.get_xy();
+std::tuple<double, double> NBodies::vel(Wanderer Iander, int t, int k)
+{
+    double dummy1, dummy2;
+    double vx, vy;
+    double kx, ky;
+    double kxn, kyn;
+    double hl;
 
-//     int length = Jander.size();
+    if ((k == 2) || (k == 3)) {hl = h/2;}
+    else {hl = h;}
 
-//     rn[X] = xy[X] + (zeta_in[X] * h);
-//     rn[Y] = xy[Y] + (zeta_in[Y] * h);
-//     // double ri = sqrt(pow(rn[X], 2) + pow(rn[Y], 2));
+    std::tie(dummy1, dummy2, vx, vy) = Iander.get_nth(t);
+    std::tie(kx, ky) = Iander.get_dv(k);
 
-//     // std::cout << "Ri = " << r << std::endl; 
+    kxn = vx + kx*hl;
+    kyn = vy + ky*hl;
 
-//     for (int j = 0; j < length; j++) {
-//         std::array<double, 2> jxy = Jander[j].get_xy();
-//         // double r = pow((jxy[X] - rn[X]), 2) + pow((jxy[Y] - rn[Y]), 2);
-//         double r = sqrt(((jxy[X] - rn[X])*(jxy[X] - rn[X])) + ((jxy[Y] - rn[Y])*(jxy[Y] - rn[Y])));
-
-//         // std::cout << "Mj = " << Jander[j].get_gass() << " Rj = " << Jander[j].get_r() << " r = " << pow(r - Jander[j].get_r(), 3) << " {" << jxy[X] << ", " << jxy[Y] << "} ";
-        
-//         // double a = Jander[j].get_gass() / pow(r, 3);  // note: G is moved to G*Mj, meaning it's tied to the mass
-//         double a = Jander[j].get_gass() / (r * r * r);  // note: G is moved to G*Mj, meaning it's tied to the mass
-
-//         // std::cout << " a = " << a << std::endl;
-        
-//         ai[X] += a * (jxy[X] - rn[X]);
-//         ai[Y] += a * (jxy[Y] - rn[Y]);
-
-//         // std::cout << "Ax = " << ai[X] << " Ay = " << ai[Y] << std::endl;
-//     }
-
-//     return ai;
-
-// }
+    return {kxn, kyn};
+}
 
 
-std::array<double, 2> NBodies::acc(Wanderer Iander, std::vector<Wanderer> Jander, int t, int ki) {
-    std::array<double, 2> ai = {0, 0};
-    double xn, yn, vxn, vyn;
 
+std::tuple<double, double> NBodies::acc(Wanderer Iander, std::vector<Wanderer> Jander, int n, int k)
+{
+    double kxn = 0, kyn = 0;
 
-    std::tie(xn, yn, vxn, vyn) = Iander.get_nth(t);
-    std::array<std::array<double, 4>, 2> DR = Iander.get_dr();
-    double drx, dry;
-    if (ki > 0) {drx = DR[X][ki]; dry = DR[Y][ki];}
-    else {drx = 0; dry = 0;}
-
-    double Ix = (xn + drx*h);
-    double Iy = (yn + dry*h);
+    double dummy1, dummy2;
+    double xi, yi;
+    double xi0, yi0;
+    double kix, kiy;
+    double hl;
+    
+    if ((k == 2) || (k == 3)) {hl = h/2;}
+    else {hl = h;}
 
     int length = Jander.size();
 
+    std::tie(xi0, yi0, dummy1, dummy2) = Iander.get_nth(n);
+    std::tie(kix, kiy) = Iander.get_dr(k);
+
+    xi = xi0 + kix*hl;
+    yi = yi0 + kiy*hl;
+
     for (int j = 0; j < length; j++) {
-        double jx, jy, jvx, jvy;
-        std::tie(jx, jy, jvx, jvy) = Jander[j].get_nth(t);
-        std::array<std::array<double, 4>, 2> JDR = Jander[j].get_dr();
-        double jh = Jander[j].get_time();
-        double Jx, Jy;
+        double xj, yj;
+        double xj0, yj0;
+        double kjx, kjy;
 
-        if (ki > 0 ) {Jx = (jx + JDR[X][ki]*jh); Jy = jy + JDR[Y][ki]*jh;}
-        else {Jx = jx; Jy = jy;}
+        std::tie(xj0, yj0, dummy1, dummy2) = Jander[j].get_nth(n);
+        std::tie(kjx, kjy) = Jander[j].get_dr(n);
 
-        double r = sqrt( ((Jx - Ix)*(Jx - Ix)) + ((Jy - Iy)*(Jy - Iy)) );
+        xj = xj0 + kjx*hl;
+        yj = yj0 + kjy*hl;
 
-        double a = Jander[j].get_gass() / (r * r * r);  // note: G is moved to G*Mj, meaning it's tied to the mass
+        double rx = xi - xj; double ry = yi - yj;
 
-        ai[X] += a * (Jx - Ix);
-        ai[Y] += a * (Jy - Ix);
+        double r = sqrt(rx*rx + ry*ry);
 
+        double a = (-1) * Jander[j].get_gass() / (r*r*r);
+
+        kxn += a * rx; kyn += a * ry;
     }
 
-    return ai;
-
+    return {kxn, kyn};
 }
 
 
 
-// // std::array<double, 2> NBodies::vel(Wanderer Iander, std::array<double, 2> zeta_in, double h) {
-// std::array<double, 2> NBodies::vel(std::array<double, 2> v_in, std::array<double, 2> zeta_in, double h) {
-//     std::array<double, 2> v_out;
-
-//     // std::cout << "h = " << h << std::endl;
-//     // std::cout << "Vx_in = " << v_in[X] << "\tVy_in = " << v_in[Y] << std::endl;
-//     // std::cout << "nx = " << zeta_in[X] << "\tny = " << zeta_in[Y] << std::endl;
-
-//     v_out[X] = v_in[X] + (h * zeta_in[X]);
-//     v_out[Y] = v_in[Y] + (h * zeta_in[Y]);
-
-//     // std::cout << "Vx_out = " << v_out[X] << "\tVy_out = " << v_out[Y] << std::endl; 
-
-//     // return v_in + (h * zeta_in);
-
-//     return v_out;
-
-// }
-
-
-// std::array<double, 2> NBodies::vel(Wanderer Iander, std::array<double, 2> zeta_in, double h) {
-std::array<double, 2> NBodies::vel(Wanderer Iander, int ki, int t) {
-    std::array<double, 2> v_out;
-    double xn, yn, vxn, vyn;
-    std::tie(xn, yn, vxn, vyn) = Iander.get_nth(t);
-    double h = Iander.get_time();
-    std::array<std::array<double, 4>, 2> DV = Iander.get_dv();
-    double dvx, dvy;
-
-    if (ki > 0) {dvx = DV[X][ki]; dvy = DV[Y][ki];}
-    else {dvx = 0; dvy = 0;}
-
-    // std::cout << "h = " << h << std::endl;
-    // std::cout << "Vx_in = " << v_in[X] << "\tVy_in = " << v_in[Y] << std::endl;
-    // std::cout << "nx = " << zeta_in[X] << "\tny = " << zeta_in[Y] << std::endl;
-
-    v_out[X] = vxn + (h * dvx);
-    v_out[Y] = vyn + (h * dvy);
-
-    // std::cout << "Vx_out = " << v_out[X] << "\tVy_out = " << v_out[Y] << std::endl; 
-
-    // return v_in + (h * zeta_in);
-
-    return v_out;
-
-}
-
-
-void NBodies::write_csv(fs::path output_path) {
-
-    // int rows = table.size(), cols = table[0].size();
-    int cols = psystem.size();
-
-    // std::ofstream fileout(output_path);
-
-    // std::cout << std::endl;
-
-    std::string header = "t";
-    for (const auto& [name, body]: psystem) {header = header + "," + name + "_x," + name + "_y";}
-    header = header + "\n";
-
-    // fileout << header;
-
-    // std::cout << header;
-
-    for (int t = 0; t < tsteps + 1; t++) {
-
-        // std::string row_data;
-        // fileout << std::to_string(r);
-        // row_data = t;
-        // std::cout << t;
-        
-        for (auto& [name, body]: psystem) {
-            // row_data = row_data + "," + std::to_string(body.xn[t]) + "," + std::to_string(body.yn[t]);
-            // std::cout << "\t" << body.xn[t] << "\t" << body.yn[t];
-        }
-        
-        // row_data = row_data + "\n";
-        // std::cout << "\n";
-
-        // std::cout << row_data;
-
-        // fileout << row_data;
-    }
-
-    // fileout.close();
-
-}
-
-
-void NBodies::init_table() {
-    blank_table.resize(2);
-    blank_table[0].resize(4), blank_table[1].resize(4);
-}
+std::map<std::string, Wanderer> NBodies::get_system() 
+{return psystem;}

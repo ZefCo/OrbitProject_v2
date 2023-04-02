@@ -5,117 +5,91 @@
 #include <array>
 #include <iostream>
 #include <tuple>
-// #include <math.h>
 
-// const int X = 0, Y = 1;
+// not because I'm laxy, but because I have to deal with so many x and y
+// this is going to be easier to index them
+const int X = 0, Y = 1;
+
 
 class Wanderer {
     public:
-        // inits the Wanderer class. Requires a mass, and inital x and y position, an inital velocity, and a (unique) name.
-        // the uniquness of the name is highly recomended because these are held in a map
-        Wanderer(double mass, double x, double y, double vx, double vy, std::string name);
+        // constructor
+        Wanderer(std::string name, double mass, double x0, double y0, double vx0, double vy0);
         // destructor
         ~Wanderer();
 
-        // returns the mass
+        // get mass
         double get_mass();
-        // returns the G*mass: figured this would be computationally easier then continually calling G
-        // The other way is to factor out the G from the sum and do it once in NBodies, but I thought this
-        // was more fun
+
+        // set GMass: mass times a constant. Useful for not having to do the G*M over and over again
+        // if there's a constant that has to be multiplied by the mass over and over again you can set
+        // it here and save on some computations
+        void set_gass(double G);
+
+        // get GMass
         double get_gass();
-        // returns sqrt(x**2 + y**2)
-        double get_r();
-        // Get the initial x and y values
-        std::array<double, 2> get_xy();
-        // Get the initial vx and vy values
-        std::array<double, 2> get_vxy();
-        // returns the name
-        std::string get_name();
-        // sets the size based off an input size and pushes in the inital values to the first position.
-        void set_vec_size(int tsteps);
 
-        // Inserts something into the nth position
-        void nth(int n);
+        // push nth states
+        void add_nth(double x, double y, double vx, double vy);
 
-        // returns the nth position (index 0 and 1), and veloctiy (index 2 and 3)
+        // get nth states
         std::tuple<double, double, double, double> get_nth(int n);
 
-        // stores values for later pushing
-        void storage(double xu, double yu, double vxu, double vyu);
-        // stores the values for later comparison to determine the step size
-        void storage1(double xu, double yu, double vxu, double vyu);
-        // stores the values for later comparison to determine the step size
-        void storage2(double xu, double yu, double vxu, double vyu);
+        // get dv
+        std::tuple<double, double> get_dv(int k);
 
-        // sets the G*mass value of the Wanderer
-        void Gmass(double G);
+        // set dv
+        void update_dv(std::array<double, 2> dxy, int k);
 
-        void set_time(double h);
+        // clears dv: sets all values to 0
+        void clear_dv();
 
-        double get_time();
+        // get dr
+        std::tuple<double, double> get_dr(int k);
 
-        // I really need to go through this and find what I'm not using any more
-        void update_position(double x, double y, double vx, double vy);
+        // set dr
+        void update_dr(std::array<double, 2> dxy, int k);
 
-        //
-        std::array<std::array<double, 4>, 2> get_dv();
-        //
-        std::array<std::array<double, 4>, 2> get_dr();
+        // clears dr: sets all values to 0
+        void clear_dr();
 
-        //
-        void update_dv(int k);
-        //
-        void update_dr(int k);
+        // stores the dv values for later use
+        void store_dv(std::array<double, 2> dxy);
+        // stores the dr values for later use
+        void store_dr(std::array<double, 2> dxy);
 
-        void store_dr(std::array<double, 2> store);
-        void store_dv(std::array<double, 2> store);
-
+        std::tuple<double, double> get_dr_store();
+        std::tuple<double, double> get_dv_store();
 
     private:
+        // Yes it's kind of Faux Pas to have all these private variables and then have
+        // ways to easily grab them, but I want protections against weird numbers being put
+        // into these variables. This way they'll change only really if I want them to
+        // change
+
+        // holds the mass
         const double mass;
+        // holds the Mass * constant value
         double gass;
-        std::string name;
+        // the *unique* name of the object (it should be unique, else there will be problems
+        // down the road)
+        const std::string name;
 
-        // OK I realize this might be Faux Pas in C++ to have these Private and then have a bunch of getters and setters for them
-        // but I'm trying to limit the access to these variables, that way I don't have accidental values being shoved into them,
-        // and be able to access them when needed.
-
-        double x;
-        double y;
-        double vx;
-        double vy;
-
-        double  x_store;
-        double  y_store;
-        double vx_store;
-        double vy_store;
-
-        double  x1_store;
-        double  y1_store;
-        double vx1_store;
-        double vy1_store;
-
-        double  x2_store;
-        double  y2_store;
-        double vx2_store;
-        double vy2_store;
-
-        double tsize;
-
-        std::array<std::array<double, 4>, 2> dv;
-        std::array<std::array<double, 4>, 2> dr;
-
-        std::array<double, 2> dv_store;
-        std::array<double, 2> dr_store;
-
-        // stores the Xn positions in a vector
+        // vector of the x positions
         std::vector<double> xn;
-        // stores the Yn positions in a vector
+        // vector of the y positions
         std::vector<double> yn;
-        // stores the VXn positions in a vector
+        // vector of the vx velocity - maybe this could be a single value as I don't really need
+        // to know it's velocity at every point in time
         std::vector<double> vxn;
-        // stores the VYn positions in a vector
+        // vector of the vy velocity
         std::vector<double> vyn;
 
+        // k vector for the velocity. Note it's a 2D vector
+        std::array<std::array<double, 4>, 2> dv;
+        // k vector for the position. Note it's 2D: 0 = X and 1 = Y
+        std::array<std::array<double, 4>, 2> dr;
 
+        std::array<double, 2> dummy_dv;
+        std::array<double, 2> dummy_dr;
 };

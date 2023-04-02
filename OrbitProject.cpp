@@ -48,12 +48,12 @@ std::map<std::string, Wanderer> create_system(fs::path filename) {
     std::map<std::string, Wanderer> system;
 
     for (Json::Value::iterator ob = root["System"].begin(); ob != root["System"].end(); ++ob) {
-        Wanderer local_object((*ob)["m"].asDouble(), 
+        Wanderer local_object((*ob)["name"].asString(),
+                              (*ob)["m"].asDouble(), 
                               (*ob)["x0"].asDouble(), 
                               (*ob)["y0"].asDouble(), 
                               (*ob)["vx0"].asDouble(), 
-                              (*ob)["vy0"].asDouble(), 
-                              (*ob)["name"].asString());
+                              (*ob)["vy0"].asDouble());
 
         // system[(*ob)["name"].asString()] = local_object;
         system.emplace((*ob)["name"].asString(), local_object);
@@ -91,29 +91,14 @@ void write_csv(fs::path output_path, std::map<std::string, Wanderer> planet_data
     for (int t = 0; t < rows + 1; t++) {
 
         std::string row_data;
-        // fileout << std::to_string(t);
-        // row_data = std::to_string(t);
-        fileout << t << ",";
-        // std::cout << t;
+        fileout << t;
 
         for (auto& [name, body]: planet_data) {
             std::tie(xn, yn, vxn, vyn) = body.get_nth(t);
-            fileout << xn << "," << yn << ",";
-            // row_data = row_data + "," + std::to_string(xn) + "," + std::to_string(yn);
-            // std::cout << "\t" << body.xn[t] << "\t" << body.yn[t];
+            fileout << "," << xn << "," << yn;
         }
 
         fileout << "\n";
-
-        // for (auto& [name, body]: planet_data) {
-        //     row_data = row_data + "," + std::to_string(body.xn[t]) + "," + std::to_string(body.yn[t]);
-        //     // std::cout << "\t" << body.xn[t] << "\t" << body.yn[t];
-        // }
-        
-        // row_data = row_data + "\n";
-        // std::cout << "\n";
-
-        // std::cout << row_data;
 
         fileout << row_data;
     }
