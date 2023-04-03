@@ -1,5 +1,9 @@
 #include "Wanderer.h"
 
+// Trying using this -> because it looks like the value is getting overridden a lot and then gets
+// turned into garbage
+// https://stackoverflow.com/questions/24643388/variables-printing-as-nan-or-inf-instead-of-actual-value
+
 
 Wanderer::Wanderer(std::string name,
                    double mass,
@@ -53,33 +57,43 @@ void Wanderer::clear_dv()
 
 
 
-void Wanderer::update_dr(std::array<double, 2> dxy, int k)
-{dr[X][k] = dxy[X]; dr[Y][k] = dxy[Y];}
+void Wanderer::update_dr(int k)
+{dr[X][k] = dummy_dr[X]; dr[Y][k] = dummy_dr[Y];}
 
 
 
-void Wanderer::update_dv(std::array<double, 2> dxy, int k)
-{dv[X][k] = dxy[X]; dv[Y][k] = dxy[Y];}
+void Wanderer::update_dv(int k)
+{dv[X][k] = dummy_dv[X]; dv[Y][k] = dummy_dv[Y];}
 
 
 
 std::tuple<double, double> Wanderer::get_dr(int k)
-{return {dr[X][k], dr[Y][k]};}
+{double drx = dr[X][k]; double dry = dr[Y][k];
+ if (drx != drx) {std::cout << "\t~!~!~! error in getting dr[X] !~!~!~" << std::endl;}
+ if (dry != dry) {std::cout << "\t~!~!~! error in getting dr[Y] !~!~!~" << std::endl;}
+ return {drx, dry};}
 
 
 
 std::tuple<double, double> Wanderer::get_dv(int k)
-{return {dv[X][k], dv[Y][k]};}
-
+{double dvx = dv[X][k]; double dvy = dv[Y][k];
+ if (dvx != dvx) {std::cout << "\t~!~!~! error in getting dr[X] !~!~!~" << std::endl;}
+ if (dvy != dvy) {std::cout << "\t~!~!~! error in getting dr[Y] !~!~!~" << std::endl;}
+ return {dvx, dvy};}
+ 
 
 
 void Wanderer::store_dv(std::array<double, 2> dxy) 
-{dummy_dv = dxy;}
+{this -> dummy_dv[X] = dxy[X]; this -> dummy_dv[Y] = dxy[Y];
+if (dummy_dv[X] != dummy_dv[X]) {std::cout << "\t\t~~!!~~!! error in setting dummy dv X !!~~!!~~" << std::endl;}
+if (dummy_dv[Y] != dummy_dv[Y]) {std::cout << "\t\t~~!!~~!! error in setting dummy dv Y !!~~!!~~" << std::endl;}}
 
 
 
 void Wanderer::store_dr(std::array<double, 2> dxy) 
-{dummy_dr = dxy;}
+{this -> dummy_dr[X] = dxy[X]; this -> dummy_dr[Y] = dxy[Y];
+if (dummy_dr[X] != dummy_dr[X]) {std::cout << "\t\t~~!!~~!! error in setting dummy dr X !!~~!!~~" << std::endl;}
+if (dummy_dr[Y] != dummy_dr[Y]) {std::cout << "\t\t~~!!~~!! error in setting dummy dr Y !!~~!!~~" << std::endl;}}
 
 
 
@@ -90,3 +104,17 @@ std::tuple<double, double> Wanderer::get_dr_store()
 
 std::tuple<double, double> Wanderer::get_dv_store()
 {return {dummy_dv[X], dummy_dv[Y]};}
+
+
+std::string Wanderer::get_name()
+{return name;}
+
+
+
+void Wanderer::set_dr(std::array<double, 2> dxy, int k)
+{dr[X][k] = dxy[X]; dr[Y][k] = dxy[Y];}
+
+
+
+void Wanderer::set_dv(std::array<double, 2> dxy, int k)
+{dv[X][k] = dxy[X]; dv[Y][k] = dxy[Y];}

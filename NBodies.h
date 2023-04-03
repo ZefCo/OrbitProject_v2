@@ -4,6 +4,7 @@
 #include <iostream>
 #include <filesystem>
 #include <tuple>
+#include <cstdlib>
 #include "Wanderer.h"
 
 namespace fs = std::filesystem;
@@ -21,8 +22,11 @@ class NBodies{
         // multiplies each M by G
         void init_system();
 
-        // the actual RK4 step
+        // Calculates the k values of the RK4 step
         void time_step(int t);
+
+        // Finds the next position and velocity value for the bodies
+        void n_plusone(int t);
 
         // evaluates v = v + kh
         std::tuple<double, double> vel(Wanderer Iander, int t, int k);

@@ -39,7 +39,9 @@ class Wanderer {
         std::tuple<double, double> get_dv(int k);
 
         // set dv
-        void update_dv(std::array<double, 2> dxy, int k);
+        void update_dv(int k);
+
+        void set_dv(std::array<double, 2> dxy, int k);
 
         // clears dv: sets all values to 0
         void clear_dv();
@@ -48,7 +50,9 @@ class Wanderer {
         std::tuple<double, double> get_dr(int k);
 
         // set dr
-        void update_dr(std::array<double, 2> dxy, int k);
+        void update_dr(int k);
+
+        void set_dr(std::array<double, 2> dxy, int k);
 
         // clears dr: sets all values to 0
         void clear_dr();
@@ -60,6 +64,8 @@ class Wanderer {
 
         std::tuple<double, double> get_dr_store();
         std::tuple<double, double> get_dv_store();
+
+        std::string get_name();
 
     private:
         // Yes it's kind of Faux Pas to have all these private variables and then have
@@ -90,6 +96,9 @@ class Wanderer {
         // k vector for the position. Note it's 2D: 0 = X and 1 = Y
         std::array<std::array<double, 4>, 2> dr;
 
+        // Value for storing the dv value for later
         std::array<double, 2> dummy_dv;
+        // Value for storing the dr value for later
         std::array<double, 2> dummy_dr;
+
 };

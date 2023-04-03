@@ -33,4 +33,4 @@ std::map<std::string, Wanderer> create_system(fs::path filename);
 void write_csv(fs::path output_path, std::map<std::string, Wanderer> planet_data, int rows);
 
 
-std::tuple<double, double, double> import_settings(fs::path settings_file);
+std::tuple<double, double, double, double> import_settings(fs::path settings_file);

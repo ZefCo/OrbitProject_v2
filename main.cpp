@@ -1,35 +1,39 @@
 #include <iostream>
 #include <chrono>
 #include <tuple>
-// #include <math.h>
+#include <math.h>
 #include "Wanderer.h"
 #include "OrbitProject.h"
 // #include "NBodies_ats.h"
 #include "NBodies.h"
 
 // g++ main.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies.cpp -o OP.exe
+// g++ -Wall -Wextra -g main.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies.cpp -o OP.exe
 
 int main() {
     int time_steps;
     double h;
     double G;
     double delta;
+    int years;
+    double scale;
 
     // time_steps = 5;
     // std::cout << "Input a value for h (double): ";
     // std::cout << "Step size set to 60*60*24 seconds (seconds in a day)" << std::endl << std::endl;
 
-    std::tie(G, delta, h) = import_settings(fs::current_path() / "Settings.json");
-    // std::cin >> h;
-    // h = 60 * 60 * 24;
-    std::cout << "G = " << G << std::endl;
-    // std::cout << "delta = " << delta << std::endl;  // delta not needed for this one
-    std::cout << "h = " << h << std::endl;
+    std::tie(G, delta, h, scale) = import_settings(fs::current_path() / "Settings.json");
 
-    std::cout << "Input the number of time steps - days (int): ";
+    std::cout << "Input the number of years to run the simulation (int): ";
     // time_steps = 50;
     // std::cout << "Value set to " << time_steps << std::endl;
-    std::cin >> time_steps;
+    std::cin >> years;
+
+    time_steps = years * 365 * (int)scale;
+    h = h / scale;
+
+    std::cout << "G = " << G << std::endl;
+    std::cout << "h = " << h << std::endl;
 
     auto ts = std::chrono::high_resolution_clock::now();
     std::map<std::string, Wanderer> system;

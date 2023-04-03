@@ -10,7 +10,11 @@ NBodies::~NBodies() {}
 
 
 void NBodies::orbits() 
-{for (int t = 0; t < tsteps; t++) {time_step(t); if ((t % 10000) == 0) {std::cout << "Finished step " << t << std::endl;}}}
+{
+    for (int t = 0; t < tsteps; t++) 
+    {time_step(t); 
+    n_plusone(t); 
+    if ((t % 10000) == 0) {std::cout << "Finished step " << t << std::endl;}}}
 
 
 
@@ -25,12 +29,12 @@ std::cout << body_name << ": x0 = " << x0 << " y0 = " << y0 << " vx0 = " << vx0 
 
 void NBodies::time_step(int t)
 {
-
     std::cout << "#### " << t << " ####" << std::endl;
-    
+
     for (int kn = 0; kn < 4; kn++) {
         int k = kn - 1;
-        // std::cout << "k = " << k << " kn = " << kn << std::endl;
+        std::map<std::string, std::array<double, 2>> dr_storage;
+        std::map<std::string, std::array<double, 2>> dv_storage;
         if (k < 0) {k = 0;} // the k values for a given body are set to 0, so indexing with kn = 0 and k = 0 means the return values are 0.
                             // it's a little bit of work to be super lazy: I can use the same function over and over with no alteration, just
                             // need to make sure that the tables are set to 0 at the start of the loop
@@ -46,33 +50,41 @@ void NBodies::time_step(int t)
             std::tie(drx, dry) = vel(body, t, k);  // returns dr/dt -> uses dv/dt to find the k value
             std::tie(dvx, dvy) = acc(body, Jander, t, k);  // returns dv/dt -> uses dr/dt to find the k vaule
 
-            body.store_dr({drx, dry});
-            body.store_dv({dvx, dvy});
+            // std::cout << k << " " << drx << " " << dry << " " << dvx << " " << dvy << std::endl;
+
+            // body.store_dr({drx, dry});
+            // body.store_dv({dvx, dvy});
+
+            dr_storage[body_name] = {drx, dry};
+            dv_storage[body_name] = {dvx, dvy};
+
+            if ((drx != drx) || (dry != dry) || (dvx != dvx) || (dvy != dvy)) {
+                std::cout << "!!!! Problem at " << kn << " " << body_name << std::endl;
+
+                if (drx != drx) {std::cout << "\tdrx!!!!" << std::endl;}
+                if (dry != dry) {std::cout << "\tdry!!!!" << std::endl;}
+                if (dvx != dvx) {std::cout << "\tdvx!!!!" << std::endl;}
+                if (dvy != dvy) {std::cout << "\tdvy!!!!" << std::endl;}}
         }
 
         for (auto& [body_name, body]: psystem) {
             double dvx, dvy, drx, dry;
 
-            std::tie(drx, dry) = body.get_dr_store();
-            std::tie(dvx, dvy) = body.get_dv_store();
-
-            body.update_dr({drx, dry}, kn);
-            body.update_dv({dvx, dvy}, kn);
+            for(auto const& [name, drr]: dr_storage) {
+                if (name == body_name) {
+                    body.set_dr(drr, kn);
+                    body.set_dv(dv_storage[name], kn);
+                    break;
+                }
+            }
+            // body.update_dr(kn);
+            // body.update_dv(kn);
         }
     }
 
-    // std::cout << "Finished k for loop" << std::endl;
+}
 
-    // if (t > 124){
-    // for (auto& [body_name, body]: psystem) {
-    //     double drx, dry, dvx, dvy;
-    //     std::cout << body_name << " initial k values" << std::endl;
-    //     for (int kk = 0; kk < 4; kk++) {
-    //         std::tie(drx, dry) = body.get_dr(kk);
-    //         std::tie(dvx, dvy) = body.get_dv(kk);
-    //         std::cout << "k = " << kk << " drx = " << drx << " dry = " << dry << " dvx = " << " " << dvx << " dvy = " << dvy << std::endl;
-    // }}}
-
+void NBodies::n_plusone(int t){  
     for (auto& [body_name, body]: psystem) {
         double xnn, ynn, vxnn, vynn;
 
@@ -87,67 +99,35 @@ void NBodies::time_step(int t)
         std::tie(xn, yn, vxn, vyn) = body.get_nth(t);
         std::tie(drx1, dry1) = body.get_dr(0); std::tie(drx2, dry2) = body.get_dr(1); std::tie(drx3, dry3) = body.get_dr(2); std::tie(drx4, dry4) = body.get_dr(3);
         std::tie(dvx1, dvy1) = body.get_dv(0); std::tie(dvx2, dvy2) = body.get_dv(1); std::tie(dvx3, dvy3) = body.get_dv(2); std::tie(dvx4, dvy4) = body.get_dv(3);
-        
-        // std::cout << body_name << std::endl;
+
+        // std::cout << "~~~Body " << body_name << " ~~~" << std::endl;
         // std::cout << "h = " << h << std::endl;
         // std::cout << "xn = " << xn << " yn = " << yn << " vxn = " << vxn << " vyn = " << vyn << std::endl;
-        // std::cout << "drx1 = " << drx1 << " drx2 = " << drx2 << " drx3 = " << drx3 << " drx4 = " << drx4 << std::endl;
-        // std::cout << "dry1 = " << dry1 << " dry2 = " << dry2 << " dry3 = " << dry3 << " dry4 = " << dry4 << std::endl;
-        // std::cout << "dvx1 = " << dvx1 << " dvx2 = " << dvx2 << " dvx3 = " << dvx3 << " dvx4 = " << dvx4 << std::endl;
-        // std::cout << "dvx1 = " << dvy1 << " dvx2 = " << dvy2 << " dvx3 = " << dvy3 << " dvx4 = " << dvy4 << std::endl;
 
-        std::cout << "Updating: " << body_name << std::endl;
-        
+        // std::cout << "drx1 = " << drx1 << " drx2 = " << drx2 << " drx3 = " << drx3 << " drx4 = " << drx4 << std::endl; 
+        // std::cout << "dry1 = " << dry1 << " dry2 = " << dry2 << " dry3 = " << dry3 << " dry4 = " << dry4 << std::endl; 
+        // std::cout << "dvx1 = " << dvx1 << " dvx2 = " << dvx2 << " dvx3 = " << dvx3 << " dvx4 = " << dvx4 << std::endl; 
+        // std::cout << "dvy1 = " << dvy1 << " dvy2 = " << dvy2 << " dvy3 = " << dvy3 << " dvy4 = " << dvy4 << std::endl; 
+
         xnn = xn + (h / 6.0) * (drx1 + 2*drx2 + 2*drx3 + drx4);
         ynn = yn + (h / 6.0) * (dry1 + 2*dry2 + 2*dry3 + dry4);
         
         vxnn = vxn + (h / 6.0) * (dvx1 + 2*dvx2 + 2*dvx3 + dvx4);
         vynn = vyn + (h / 6.0) * (dvy1 + 2*dvy2 + 2*dvy3 + dvy4);
 
-
-        if (xn != xn) {std::cout << "Failure at xn: " << xn << std::endl;}
-        if (yn != yn) {std::cout << "Failure at yn: " << yn << std::endl;}
-        if (vxn != vxn) {std::cout << "Failure at vxn: " << vxn << std::endl;}
-        if (vyn != vyn) {std::cout << "Failure at vyn: " << vyn << std::endl;}
-
-        if (h != h) {std::cout << "Failuer at h";}
-
-        if (drx1 != drx1) {std::cout << "Failuer at drx1: " << drx1 << std::endl;}
-        if (drx2 != drx2) {std::cout << "Failuer at drx2: " << drx2 << std::endl;}
-        if (drx3 != drx3) {std::cout << "Failuer at drx3: " << drx3 << std::endl;}
-        if (drx4 != drx4) {std::cout << "Failuer at drx4: " << drx4 << std::endl;}
-
-        if (dry1 != dry1) {std::cout << "Failuer at dry1: " << dry1 << std::endl;}
-        if (dry2 != dry2) {std::cout << "Failuer at dry2: " << dry2 << std::endl;}
-        if (dry3 != dry3) {std::cout << "Failuer at dry3: " << dry3 << std::endl;}
-        if (dry4 != dry4) {std::cout << "Failuer at dry4: " << dry4 << std::endl;}
-
-        if (dvx1 != dvx1) {std::cout << "Failuer at dvx1: " << dvx1 << std::endl;}
-        if (dvx2 != dvx2) {std::cout << "Failuer at dvx2: " << dvx2 << std::endl;}
-        if (dvx3 != dvx3) {std::cout << "Failuer at dvx3: " << dvx3 << std::endl;}
-        if (dvx4 != dvx4) {std::cout << "Failuer at dvx4: " << dvx4 << std::endl;}
-
-        if (dvy1 != dvy1) {std::cout << "Failuer at dvy1: " << dvy1 << std::endl;}
-        if (dvy2 != dvy2) {std::cout << "Failuer at dvy2: " << dvy2 << std::endl;}
-        if (dvy3 != dvy3) {std::cout << "Failuer at dvy3: " << dvy3 << std::endl;}
-        if (dvy4 != dvy4) {std::cout << "Failuer at dvy4: " << dvy4 << std::endl;}
-
-        if (xnn != xnn) {std::cout << "Failuer at xnn: " << xnn << std::endl;}
-        if (ynn != ynn) {std::cout << "Failuer at ynn: " << ynn << std::endl;}
-        if (vxnn != vxnn) {std::cout << "Failuer at vxnn: " << vxnn << std::endl;}
-        if (vynn != vynn) {std::cout << "Failuer at vynn: " << vynn << std::endl;}
-
-        // std::cout << body_name << " @ t = " << t << std::endl;
         // std::cout << "xnn = " << xnn << " ynn = " << ynn << " vxnn = " << vxnn << " vynn = " << vynn << std::endl;
 
-        // std::cout << "Adding nth" << std::endl;
+        if ((xnn != xnn) || (ynn != ynn) || (vxnn != vxnn) || (vynn != vynn)) {
+            std::cout << "!!!! Issues @ " << body_name << " !!!!" << std::endl;
+            abort();}
+
+
         body.add_nth(xnn, ynn, vxnn, vynn);
         // std::cout << "clearning dr" << std::endl;
         body.clear_dr(); 
         // std::cout << "clearing dv" << std::endl;
         body.clear_dv();
     }
-    std::cout << "Finished updating bodies" << std::endl;
 }
 
 
@@ -161,14 +141,26 @@ std::tuple<double, double> NBodies::vel(Wanderer Iander, int t, int k)
     double kxn, kyn;
     double hl;
 
-    if ((k == 2) || (k == 3)) {hl = h/2;}
-    else {hl = h;}
+    if ((k == 0) || (k == 3)) {hl = h;}
+    else {hl = h/2;}
 
     std::tie(dummy1, dummy2, vx, vy) = Iander.get_nth(t);
     std::tie(kx, ky) = Iander.get_dv(k);
 
     kxn = vx + kx*hl;
     kyn = vy + ky*hl;
+
+    if ((vx != vx) || (vy != vy) || (kx != kx) || (ky != ky) || (hl != hl) || (k != k) || (t != t) || (h != h))
+    {std::cout << "something went wrong in vel function for " << Iander.get_name() << std::endl;
+    if (vx != vx) {std::cout << "~~~ vx ~~~" << std::endl;}
+    if (vy != vy) {std::cout << "~~~ vy ~~~" << std::endl;}
+    if (kx != kx) {std::cout << "~~~ kx ~~~" << std::endl;}
+    if (ky != ky) {std::cout << "~~~ ky ~~~" << std::endl;}
+    if (hl != hl) {std::cout << "~~~ hl ~~~" << std::endl;}
+    if (k != k) {std::cout << "~~~ k ~~~" << std::endl;}
+    if (t != t) {std::cout << "~~~ t ~~~" << std::endl;}
+    if (h != h) {std::cout << "~~~ h ~~~" << std::endl;}
+    }
 
     return {kxn, kyn};
 }
@@ -185,8 +177,8 @@ std::tuple<double, double> NBodies::acc(Wanderer Iander, std::vector<Wanderer> J
     double kix, kiy;
     double hl;
     
-    if ((k == 2) || (k == 3)) {hl = h/2;}
-    else {hl = h;}
+    if ((k == 0) || (k == 3)) {hl = h;}
+    else {hl = h/2;}
 
     int length = Jander.size();
 
@@ -207,13 +199,15 @@ std::tuple<double, double> NBodies::acc(Wanderer Iander, std::vector<Wanderer> J
         xj = xj0 + kjx*hl;
         yj = yj0 + kjy*hl;
 
-        double rx = xi - xj; double ry = yi - yj;
+        double rx = xi - xj; 
+        double ry = yi - yj;
 
         double r = sqrt(rx*rx + ry*ry);
 
         double a = (-1) * Jander[j].get_gass() / (r*r*r);
 
-        kxn += a * rx; kyn += a * ry;
+        kxn += a * rx; 
+        kyn += a * ry;
     }
 
     return {kxn, kyn};

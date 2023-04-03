@@ -74,7 +74,7 @@ void write_csv(fs::path output_path, std::map<std::string, Wanderer> planet_data
     std::cout << "Writing to file:\n" << output_path << std::endl;
 
     // int rows = table.size(), cols = table[0].size();
-    int cols = planet_data.size();
+    // int cols = planet_data.size();
 
     std::ofstream fileout(output_path);
 
@@ -108,7 +108,7 @@ void write_csv(fs::path output_path, std::map<std::string, Wanderer> planet_data
 }
 
 
-std::tuple<double, double, double> import_settings(fs::path settings_file) {
+std::tuple<double, double, double, double> import_settings(fs::path settings_file) {
     Json::Value root;
     std::ifstream file(settings_file);
     file >> root;
@@ -117,10 +117,11 @@ std::tuple<double, double, double> import_settings(fs::path settings_file) {
     double G = root["G"].asDouble();
     double delta = root["delta"].asDouble();
     double time_step = root["time_step"].asDouble();
+    double scale = root["scale"].asDouble();
 
     file.close();
 
-    return {G, delta, time_step};
+    return {G, delta, time_step, scale};
 
 
 
