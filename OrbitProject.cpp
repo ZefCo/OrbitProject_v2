@@ -1,128 +1,156 @@
 #include "OrbitProject.h"
-#include "Wanderer.h"
-// #include <vector>
-// #include <map>
 
-std::tuple<std::vector<double>, 
-           std::vector<double>, 
-           std::vector<double>, 
-           std::vector<double>, 
-           std::vector<double>, 
-           std::vector<std::string>> loadJSON_old(fs::path filename) {
-    
-    std::tuple<std::vector<double>, 
-               std::vector<double>, 
-               std::vector<double>, 
-               std::vector<double>, 
-               std::vector<double>, 
-               std::vector<std::string>> return_data;
-    
-    std::vector<double> x, y, m;
-    std::vector<double> vx, vy;
+
+std::tuple<std::vector<std::string>, std::vector<double>, std::vector<std::vector<double>>, std::vector<std::vector<double>>> create_system(fs::path filename) {
+    Json::Value root;
+    std::ifstream file(filename);
+    file >> root;
     std::vector<std::string> names;
-
-    Json::Value root;
-    std::ifstream file(filename);
-    file >> root;
-
-    for (Json::Value::iterator ob = root["System"].begin(); ob != root["System"].end(); ++ob) {
-        x.push_back((*ob)["x0"].asDouble());
-        y.push_back((*ob)["y0"].asDouble());
-        m.push_back((*ob)["m"].asDouble());
-        vx.push_back((*ob)["vx0"].asDouble());
-        vy.push_back((*ob)["vy0"].asDouble());
-        names.push_back((*ob)["name"].asString());
-    }
-
-    return_data = {x, y, m, vx, vy, names};
-
-    return return_data;
-
-}
-
-
-std::map<std::string, Wanderer> create_system(fs::path filename) {
-    Json::Value root;
-    std::ifstream file(filename);
-    file >> root;
-    std::map<std::string, Wanderer> system;
+    std::vector<double> masses;
+    std::vector<std::vector<double>> rn;
+    std::vector<std::vector<double>> vn;
 
     for (Json::Value::iterator ob = root["System"].begin(); ob != root["System"].end(); ++ob) {
-        Wanderer local_object((*ob)["name"].asString(),
-                              (*ob)["m"].asDouble(), 
-                              (*ob)["x0"].asDouble(), 
-                              (*ob)["y0"].asDouble(), 
-                              (*ob)["vx0"].asDouble(), 
-                              (*ob)["vy0"].asDouble());
-
-        // system[(*ob)["name"].asString()] = local_object;
-        system.emplace((*ob)["name"].asString(), local_object);
+        // std::cout << (*ob)["name"] << " loaded" << std::endl;
+        names.push_back((*ob)["name"].asString()); masses.push_back((*ob)["m"].asDouble());
+        rn.push_back({(*ob)["x0"].asDouble(), (*ob)["y0"].asDouble()});
+        vn.push_back({(*ob)["vx0"].asDouble(), (*ob)["vy0"].asDouble()});
     }
 
     file.close();
 
-    return system;
+    return {names, masses, rn, vn};
+
+}
+
+
+std::vector<double> gmass(std::vector<double> masses, double G) {
+    for (auto& mass: masses) {
+        mass *= (-1)*G;
+    }
+
+    return masses;
 
 }
 
 
 
-void write_csv(fs::path output_path, std::map<std::string, Wanderer> planet_data, int rows) {
+void orbits(double time_steps, 
+            double h,
+            std::vector<std::string> names,
+            std::vector<double> masses, 
+            std::vector<std::vector<double>> rn, 
+            std::vector<std::vector<double>> vn, 
+            double delta) {
 
-    double xn, yn, vxn, vyn;
+    double t = 0;
+    int n = 0;
 
-    std::cout << "Writing to file:\n" << output_path << std::endl;
+    fs::path output_path = fs::current_path() / "Orbit_Table.csv";
 
-    // int rows = table.size(), cols = table[0].size();
-    // int cols = planet_data.size();
-
+    std::cout << "Writing data to file as its generated:\n" << output_path << std::endl;
     std::ofstream fileout(output_path);
+    fileout << "N";
+    for (const auto& name: names) {
+        fileout << "," << name << "_x," << name << "_y";}
+    fileout << "\n";
 
-    // std::cout << std::endl;
+    fileout << n;
+    for (int nn = 0; nn < rn.size(); nn++) {
+        fileout << "," << rn[nn][X] << "," << rn[nn][Y];
+    }
+    fileout << "\n";
 
-    std::string header = "t";
-    for (const auto& [name, body]: planet_data) {header = header + "," + name + "_x," + name + "_y";}
-    header = header + "\n";
+    while (t < time_steps) {
+        double dt;
+        std::vector<std::vector<double>> rn0, vn0, rn1, vn1, rn2, vn2;
 
-    fileout << header;
+        double rho = 0;
+        // std::cout << "rho start = " << rho << std::endl;
+        // std::cout << "h start = " << h << std::endl;
+        int safty = 0;
 
-    // std::cout << header;
+        while (rho < 1) {
+            std::vector<double> diff;
+            double hrho;
 
-    for (int t = 0; t < rows + 1; t++) {
+            dt = 2*h;
 
-        std::string row_data;
-        fileout << t;
+            std::tie(rn0, vn0) = RK4(names, masses, rn, vn, h);
+            std::tie(rn1, vn1) = RK4(names, masses, rn0, vn0, h);
+            std::tie(rn2, vn2) = RK4(names, masses, rn, vn, 2*h);
 
-        for (auto& [name, body]: planet_data) {
-            std::tie(xn, yn, vxn, vyn) = body.get_nth(t);
-            fileout << "," << xn << "," << yn;
+            // for (int n = 0; n < rn1.size(); n++) {
+            //     std::cout << "x = " << rn[n][X] << " vs " << rn0[n][X] << " vs " << rn1[n][X] << " vs " << rn2[n][X] << std::endl;
+            //     std::cout << "y = " << rn[n][Y] << " vs " << rn0[n][Y] << " vs " << rn1[n][Y] << " vs " << rn2[n][Y] << std::endl;
+            // }
+
+            diff = euc_dist(rn1, rn2);
+            
+            rho = wrost_rho(diff, delta, h);
+
+            hrho = h * pow(rho, 1./4.);
+            // std::cout << "\th * rho = " << hrho << " h = " << h  << " rho = " << rho << " rho**1/4 " << pow(rho, 1./4.) << std::endl;
+            if (hrho < (2*h)) {h = hrho;}
+            else {h = 2*h;}
+
+            if (safty > 200) {std::cout << "Hit safty limit; t = " << t << std::endl; break;}
+
+            safty += 1;            
         }
+        // std::cout << " rho end = " << rho << std::endl;
+        // std::cout << " h end = " << h << std::endl;
+    
+        rn = rn1; vn = vn1;
 
+        // then write these to a file... that way I don't keep holding this data forever
+        n += 1;
+        fileout << n;
+        for (int nn = 0; nn < rn.size(); nn++) {
+            fileout << "," << rn[nn][X] << "," << rn[nn][Y];
+        }
         fileout << "\n";
 
-        fileout << row_data;
+        // std::cout << "t = " << t << " dt = " << dt << std::endl;
+        t += dt;
+
+    }
+    std::cout << "Iterations = " << n << std::endl;
+    fileout.close();
+}
+
+
+
+std::vector<double> euc_dist(std::vector<std::vector<double>> a, std::vector<std::vector<double>> b) {
+    std::vector<double> c;
+
+    c.resize(a.size());
+
+    for (int i = 0; i < a.size(); i++) {
+        double abx = pow(a[i][X] - b[i][X], 2);
+        double aby = pow(a[i][Y] - b[i][Y], 2);
+
+        double p = sqrt(abx + aby);
+
+        if (abs(p) > 0) {c[i] = p;}
+        else {c[i] = 16;}
     }
 
-    fileout.close();
-
+    return c;
 }
 
 
-std::tuple<double, double, double, double> import_settings(fs::path settings_file) {
-    Json::Value root;
-    std::ifstream file(settings_file);
-    file >> root;
-    // std::tuple<double, double, double> settings;
+double wrost_rho(std::vector<double> a, double delta, double h) {
+    double rho;
 
-    double G = root["G"].asDouble();
-    double delta = root["delta"].asDouble();
-    double time_step = root["time_step"].asDouble();
-    double scale = root["scale"].asDouble();
+    rho = h * delta / a[0];
+   
+    for (int i = 1; i < a.size(); i ++) {
+        double iho = h * delta / a[i];
+        if (rho > iho) {rho = iho;}
+    }
 
-    file.close();
-
-    return {G, delta, time_step, scale};
-
-
-
+    return rho;
 }
+
+

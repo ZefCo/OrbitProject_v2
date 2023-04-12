@@ -1,65 +1,40 @@
-#include <iostream>
-#include <chrono>
-#include <tuple>
-#include <math.h>
-#include "Wanderer.h"
 #include "OrbitProject.h"
-// #include "NBodies_ats.h"
-#include "NBodies.h"
+#include "RungeKutta.h"
 
-// g++ main.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies.cpp -o OP.exe
-// g++ -Wall -Wextra -g main.cpp jsoncpp.cpp OrbitProject.cpp Wanderer.cpp NBodies.cpp -o OP.exe
+// Don't forget the json.cpp file and folder
+// Windows
+// g++ main.cpp RungeKutta.cpp OrbitProject.cpp jsoncpp.cpp -o OP.exe
+
+const double G = 6.67408e-11;
+const double scale = 1;
+double dseconds = 60*60*24/scale;
+const double yseconds = dseconds*365*scale;
+// const int X = 0, Y = 1, RN = 0, VN = 1;
 
 int main() {
-    int time_steps;
-    double h;
-    double G;
-    double delta;
-    int years;
-    double scale;
 
-    // time_steps = 5;
-    // std::cout << "Input a value for h (double): ";
-    // std::cout << "Step size set to 60*60*24 seconds (seconds in a day)" << std::endl << std::endl;
-
-    std::tie(G, delta, h, scale) = import_settings(fs::current_path() / "Settings.json");
-
-    std::cout << "Input the number of years to run the simulation (int): ";
-    // time_steps = 50;
-    // std::cout << "Value set to " << time_steps << std::endl;
+    std::vector<double> masses; std::vector<std::string> names;
+    std::vector<std::vector<double>> rn, vn;
+    double years;
+    std::cout << "Number of years to simulate: ";
     std::cin >> years;
-
-    time_steps = years * 365 * (int)scale;
-    h = h / scale;
-
-    std::cout << "G = " << G << std::endl;
-    std::cout << "h = " << h << std::endl;
-
-    auto ts = std::chrono::high_resolution_clock::now();
-    std::map<std::string, Wanderer> system;
-
+    double delta = 1E-2;
     fs::path ao_filename = fs::current_path() / "AstronomicalObjects.json";
-    fs::path ao_outfile = fs::current_path() / "Orbit_Table.csv";
 
-    system = create_system(ao_filename);
+    std::cout << "years in seconds = " << yseconds << std::endl;
+    std::cout << "years = " << years << std::endl;
 
-    // NBodies motion(system, time_steps, h, 10E-6, G); // adaptive time step
-    NBodies motion(system, time_steps, h, G); // non adaptive time step
+    double time = yseconds * years;
+    std::cout << "Max time = " << time << std::endl;
 
-    motion.init_system();
+    std::tie(names, masses, rn, vn) = create_system(ao_filename);
 
-    motion.orbits();
+    masses = gmass(masses, G);
+    
+    std::cout << std::endl;
 
-    system = motion.get_system();
+    orbits(time, dseconds, names, masses, rn, vn, delta);
 
-    auto te = std::chrono::high_resolution_clock::now();
-    auto td = std::chrono::duration_cast<std::chrono::milliseconds>(te - ts).count();
-    std::cout << "\nFinished Code in: " << td << " miliseconds\n*not including wrting to csv" << std::endl;
 
-    // motion.write_csv(ao_outfile);
-
-    write_csv(ao_outfile, system, time_steps);
-
-    // double sanity = pow(2, 2);
 
 }
