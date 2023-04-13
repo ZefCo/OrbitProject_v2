@@ -93,6 +93,10 @@ std::vector<std::vector<double>> acc(std::vector<std::string> names,
 
             double r = sqrt(pow(xi - xj, 2) + pow(yi - yj, 2));
 
+            if (r < 1000) {r = 1000;} // this makes r act as if it's at least 1000 meters away. It probably adds to the error, but this way
+                                      // I don't have to deal with commets or asteroids going into planets and then r ~ 0 and there's a divide
+                                      // by zero error that shows up.
+
             double a = masses[j] / (r*r*r);
             ax += a * (xi - xj);
             ay += a * (yi - yj);
