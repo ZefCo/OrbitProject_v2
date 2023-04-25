@@ -94,7 +94,10 @@ void orbits(double time_steps,
             if (hrho < (2*h)) {h = hrho;}
             else {h = 2*h;}
 
-            if (safty > 200) {std::cout << "Hit safty limit; t = " << t << std::endl; break;}
+            if (safty > 200) {
+                std::cout << "Hit safty limit; t = " << t << " h = " << h << std::endl; 
+                std::cout << "Check orbital data: bodies might be too close" << std::endl;
+                exit(1);}
 
             safty += 1;            
         }
@@ -146,7 +149,7 @@ double wrost_rho(std::vector<double> a, double delta, double h) {
     rho = h * delta / a[0];
    
     for (int i = 1; i < a.size(); i ++) {
-        double iho = h * delta / a[i];
+        double iho = 30.0 * h * delta / a[i];
         if (rho > iho) {rho = iho;}
     }
 

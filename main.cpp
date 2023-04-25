@@ -21,7 +21,7 @@ int main() {
     double delta = 1E-2;
     fs::path ao_filename = fs::current_path() / "AstronomicalObjects.json";
 
-    std::cout << "years in seconds = " << yseconds << std::endl;
+    std::cout << "year in seconds = " << yseconds << std::endl;
     std::cout << "years = " << years << std::endl;
 
     double time = yseconds * years;
