@@ -80,11 +80,6 @@ void orbits(double time_steps,
             std::tie(rn1, vn1) = RK4(names, masses, rn0, vn0, h);
             std::tie(rn2, vn2) = RK4(names, masses, rn, vn, 2*h);
 
-            // for (int n = 0; n < rn1.size(); n++) {
-            //     std::cout << "x = " << rn[n][X] << " vs " << rn0[n][X] << " vs " << rn1[n][X] << " vs " << rn2[n][X] << std::endl;
-            //     std::cout << "y = " << rn[n][Y] << " vs " << rn0[n][Y] << " vs " << rn1[n][Y] << " vs " << rn2[n][Y] << std::endl;
-            // }
-
             diff = euc_dist(rn1, rn2);
             
             rho = wrost_rho(diff, delta, h);
@@ -94,9 +89,9 @@ void orbits(double time_steps,
             if (hrho < (2*h)) {h = hrho;}
             else {h = 2*h;}
 
-            if (safty > 200) {
-                std::cout << "Hit safty limit; t = " << t << " h = " << h << std::endl; 
-                std::cout << "Check orbital data: bodies might be too close" << std::endl;
+            if ((abs(h) == 0) || (safty > 200)) {
+                std::cout << "Hit safty limit; t = " << t << " h = " << h << " safty = " << safty << std::endl; 
+                std::cout << "Something is causing the adatpive time step to iterate to 0" << std::endl;
                 exit(1);}
 
             safty += 1;            
@@ -146,7 +141,7 @@ std::vector<double> euc_dist(std::vector<std::vector<double>> a, std::vector<std
 double wrost_rho(std::vector<double> a, double delta, double h) {
     double rho;
 
-    rho = h * delta / a[0];
+    rho = 30.0 * h * delta / a[0];
    
     for (int i = 1; i < a.size(); i ++) {
         double iho = 30.0 * h * delta / a[i];
